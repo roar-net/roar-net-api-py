@@ -25,7 +25,7 @@ class Neighbourhood(SupportsRandomMovesWithoutReplacement[Solution, Move], Proto
 class Problem(SupportsLocalNeighbourhood[Neighbourhood], Protocol): ...
 
 
-def first_improvement(problem: Problem, solution: Solution):
+def first_improvement(problem: Problem, solution: Solution) -> Solution:
     # modifies solution in place and returns a reference to it
     neigh = problem.local_neighbourhood()
 

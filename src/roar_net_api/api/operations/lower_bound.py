@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Protocol, Union
+from typing import Optional, Protocol, Union
 
 
 class SupportsLowerBound(Protocol):
-    def lower_bound(self) -> Union[int, float]: ...
+    def lower_bound(self) -> Optional[Union[int, float]]: ...

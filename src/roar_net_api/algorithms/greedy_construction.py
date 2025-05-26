@@ -27,7 +27,7 @@ class Neighbourhood(SupportsMoves[Solution, Move], Protocol): ...
 class Problem(SupportsConstructionNeighbourhood[Neighbourhood], SupportsEmptySolution[Solution], Protocol): ...
 
 
-def greedy_construction(problem: Problem, solution: Optional[Solution] = None):
+def greedy_construction(problem: Problem, solution: Optional[Solution] = None) -> Solution:
     """
     Solves `problem` using a greedy construction approach.
 
@@ -61,7 +61,7 @@ def greedy_construction(problem: Problem, solution: Optional[Solution] = None):
 
 
 # IMPROVE: this reuses a lot of the code from the above. Maybe we should make random tie breaking a parameter?
-def greedy_construction_with_random_tie_breaking(problem: Problem, solution: Optional[Solution] = None):
+def greedy_construction_with_random_tie_breaking(problem: Problem, solution: Optional[Solution] = None) -> Solution:
     """
     Solves `problem` using a greedy construction approach.
 

@@ -25,7 +25,7 @@ class Neighbourhood(SupportsMoves[Solution, Move], Protocol): ...
 class Problem(SupportsLocalNeighbourhood[Neighbourhood], Protocol): ...
 
 
-def greedy_improvement(problem: Problem, solution: Solution):
+def best_improvement(problem: Problem, solution: Solution) -> Solution:
     neigh = problem.local_neighbourhood()
 
     move_iter = iter(_valid_moves_and_increments(neigh, solution))

@@ -1,0 +1,95 @@
+# SPDX-FileCopyrightText: © 2025 Authors of the roar-net-api-py project <https://github.com/roar-net/roar-net-api-py/blob/main/AUTHORS>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import random
+from collections.abc import Callable
+from operator import itemgetter
+from time import perf_counter
+from typing import Optional, Protocol, Union, cast
+
+from ..api.operations import (
+    SupportsApplyMove,
+    SupportsConstructionNeighbourhood,
+    SupportsCopySolution,
+    SupportsEmptySolution,
+    SupportsLowerBoundIncrement,
+    SupportsMoves,
+    SupportsObjectiveValue,
+)
+
+
+class Solution(SupportsObjectiveValue, SupportsCopySolution, Protocol): ...
+
+
+class Move(SupportsLowerBoundIncrement[Solution], SupportsApplyMove[Solution], Protocol): ...
+
+
+class Neighbourhood(SupportsMoves[Solution, Move], Protocol): ...
+
+
+class Problem(SupportsConstructionNeighbourhood[Neighbourhood], SupportsEmptySolution[Solution], Protocol): ...
+
+
+LocalSearchFunc = Callable[[Problem, Solution], Solution]
+
+
+def grasp(
+    problem: Problem,
+    budget: float,
+    solution: Optional[Solution] = None,
+    alpha: float = 0.1,
+    local_search: Optional[LocalSearchFunc] = None,
+) -> Solution:
+    """
+    Solves `problem` using a greedy construction approach.
+
+    Note: if `solution` is given it must be a solution to `problem`. Otherwise, an empty solution is generated.
+    """
+    start = perf_counter()
+
+    neigh = problem.construction_neighbourhood()
+
+    if solution is None:
+        solution = problem.empty_solution()
+
+    best = solution
+    bestobj = solution.objective_value()
+
+    while perf_counter() - start < budget:
+        s = solution.copy_solution()
+        b = s.copy_solution()
+        bobj = s.objective_value()
+
+        C = _valid_moves_and_increments(neigh, s)
+        while len(C) != 0:
+            cmin = min(C, key=itemgetter(1))[1]
+            cmax = max(C, key=itemgetter(1))[1]
+            thresh = cmin + alpha * (cmax - cmin)
+            RCL = [m for m, decr in C if decr <= thresh]
+            m = random.choice(RCL)
+            m.apply_move(s)
+            obj = s.objective_value()
+            if obj is not None and (bobj is None or obj < bobj):
+                b = s.copy_solution()
+                bobj = b.objective_value()
+            C = _valid_moves_and_increments(neigh, s)
+        if b is not None:
+            if local_search is not None:
+                b = local_search(problem, b)
+                # The following assumes that local_search returns a better or equal objective value
+                bobj = cast(Union[int, float], b.objective_value())
+            bobj = cast(Union[int, float], bobj)
+            if bestobj is None or bobj < bestobj:
+                best = b
+                bestobj = bobj
+    return best
+
+
+def _valid_moves_and_increments(neigh: Neighbourhood, solution: Solution) -> list[tuple[Move, Union[int, float]]]:
+    res = []
+    for m in neigh.moves(solution):
+        incr = m.lower_bound_increment(solution)
+        if incr is not None:
+            res.append((m, incr))
+    return res

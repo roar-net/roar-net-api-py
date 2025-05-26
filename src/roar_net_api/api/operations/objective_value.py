@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Protocol, Union
+from typing import Optional, Protocol, Union
 
 
 class SupportsObjectiveValue(Protocol):
-    def objective_value(self) -> Union[int, float]: ...
+    def objective_value(self) -> Optional[Union[int, float]]: ...
