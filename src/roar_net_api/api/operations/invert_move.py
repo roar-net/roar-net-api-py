@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Protocol, Self
+from typing import Protocol, TypeVar
+
+InverseMove = TypeVar("InverseMove", covariant=True)
 
 
-class SupportsInvertMove(Protocol):
-    def invert_move(self) -> Self: ...
+class SupportsInvertMove(Protocol[InverseMove]):
+    def invert_move(self) -> InverseMove: ...
