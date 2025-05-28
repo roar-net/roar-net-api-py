@@ -37,9 +37,9 @@ def rls(problem: Problem, solution: Solution, budget: float) -> Solution:
             break
 
         increment = move.objective_value_increment(solution)
+        assert increment is not None
 
-        # IMPROVE: dealing with tolerances
-        if increment is not None and increment < 0:
+        if increment < 0:
             solution = move.apply_move(solution)
 
     return solution

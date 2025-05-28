@@ -71,8 +71,8 @@ def sa(
             if t <= 0:
                 break
             incr = move.objective_value_increment(solution)
-            if incr is None:
-                continue
+            assert incr is not None
+
             if acceptance(incr, t) >= random.random():
                 move.apply_move(solution)
                 obj = solution.objective_value()

@@ -41,11 +41,6 @@ def grasp(
     alpha: float = 0.1,
     local_search: Optional[LocalSearchFunc] = None,
 ) -> Solution:
-    """
-    Solves `problem` using a greedy construction approach.
-
-    Note: if `solution` is given it must be a solution to `problem`. Otherwise, an empty solution is generated.
-    """
     start = perf_counter()
 
     neigh = problem.construction_neighbourhood()

@@ -34,7 +34,6 @@ def best_improvement(problem: Problem, solution: Solution) -> Solution:
         best_move, best_incr = move_and_incr
 
         for move, incr in move_iter:
-            # IMPROVE: Dealing with tolerances
             if incr < best_incr:
                 best_move = move
                 best_incr = incr
@@ -50,5 +49,5 @@ def best_improvement(problem: Problem, solution: Solution) -> Solution:
 def _valid_moves_and_increments(neigh: Neighbourhood, solution: Solution) -> Iterable[tuple[Move, Union[int, float]]]:
     for move in neigh.moves(solution):
         incr = move.objective_value_increment(solution)
-        if incr is not None:
-            yield (move, incr)
+        assert incr is not None
+        yield (move, incr)
