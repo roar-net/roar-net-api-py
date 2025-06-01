@@ -2,30 +2,33 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from logging import getLogger
 from time import perf_counter
-from typing import Protocol
+from typing import Protocol, TypeVar
 
-from ..api.operations import (
+from ..operations import (
     SupportsApplyMove,
     SupportsLocalNeighbourhood,
     SupportsObjectiveValueIncrement,
     SupportsRandomMove,
 )
 
-
-class Solution(Protocol): ...
-
-
-class Move(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[Solution], Protocol): ...
+log = getLogger(__name__)
 
 
-class Neighbourhood(SupportsRandomMove[Solution, Move], Protocol): ...
+_TSolution = TypeVar("_TSolution")
 
 
-class Problem(SupportsLocalNeighbourhood[Neighbourhood], Protocol): ...
+class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution], Protocol): ...
 
 
-def rls(problem: Problem, solution: Solution, budget: float) -> Solution:
+class _Neighbourhood(SupportsRandomMove[_TSolution, _Move[_TSolution]], Protocol): ...
+
+
+class _Problem(SupportsLocalNeighbourhood[_Neighbourhood[_TSolution]], Protocol): ...
+
+
+def rls(problem: _Problem[_TSolution], solution: _TSolution, budget: float) -> _TSolution:
     start = perf_counter()
 
     neigh = problem.local_neighbourhood()
@@ -40,6 +43,7 @@ def rls(problem: Problem, solution: Solution, budget: float) -> Solution:
         assert increment is not None
 
         if increment < 0:
+            log.info(f"Found increment: {increment}")
             solution = move.apply_move(solution)
 
     return solution

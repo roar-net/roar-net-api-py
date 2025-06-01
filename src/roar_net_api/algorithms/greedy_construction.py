@@ -4,9 +4,10 @@
 
 import random
 from collections.abc import Iterable
-from typing import Optional, Protocol, Union
+from logging import getLogger
+from typing import Optional, Protocol, TypeVar, Union
 
-from ..api.operations import (
+from ..operations import (
     SupportsApplyMove,
     SupportsConstructionNeighbourhood,
     SupportsEmptySolution,
@@ -14,20 +15,24 @@ from ..api.operations import (
     SupportsMoves,
 )
 
-
-class Solution(Protocol): ...
-
-
-class Move(SupportsLowerBoundIncrement[Solution], SupportsApplyMove[Solution], Protocol): ...
+log = getLogger(__name__)
 
 
-class Neighbourhood(SupportsMoves[Solution, Move], Protocol): ...
+_TSolution = TypeVar("_TSolution")
 
 
-class Problem(SupportsConstructionNeighbourhood[Neighbourhood], SupportsEmptySolution[Solution], Protocol): ...
+class _Move(SupportsApplyMove[_TSolution], SupportsLowerBoundIncrement[_TSolution], Protocol): ...
 
 
-def greedy_construction(problem: Problem, solution: Optional[Solution] = None) -> Solution:
+class _Neighbourhood(SupportsMoves[_TSolution, _Move[_TSolution]], Protocol): ...
+
+
+class _Problem(
+    SupportsEmptySolution[_TSolution], SupportsConstructionNeighbourhood[_Neighbourhood[_TSolution]], Protocol
+): ...
+
+
+def greedy_construction(problem: _Problem[_TSolution], solution: Optional[_TSolution] = None) -> _TSolution:
     """
     Solves `problem` using a greedy construction approach.
 
@@ -59,7 +64,9 @@ def greedy_construction(problem: Problem, solution: Optional[Solution] = None) -
 
 
 # IMPROVE: this reuses a lot of the code from the above. Maybe we should make random tie breaking a parameter?
-def greedy_construction_with_random_tie_breaking(problem: Problem, solution: Optional[Solution] = None) -> Solution:
+def greedy_construction_with_random_tie_breaking(
+    problem: _Problem[_TSolution], solution: Optional[_TSolution] = None
+) -> _TSolution:
     neigh = problem.construction_neighbourhood()
 
     if solution is None:
@@ -78,6 +85,7 @@ def greedy_construction_with_random_tie_breaking(problem: Problem, solution: Opt
             elif incr < best_incr + 1e-6:
                 best_moves.append(move)
 
+        log.info(f"Best increment: {best_incr}")
         random.choice(best_moves).apply_move(solution)
 
         move_iter = iter(_valid_moves_and_increments(neigh, solution))
@@ -86,7 +94,9 @@ def greedy_construction_with_random_tie_breaking(problem: Problem, solution: Opt
     return solution
 
 
-def _valid_moves_and_increments(neigh: Neighbourhood, solution: Solution) -> Iterable[tuple[Move, Union[int, float]]]:
+def _valid_moves_and_increments(
+    neigh: _Neighbourhood[_TSolution], solution: _TSolution
+) -> Iterable[tuple[_Move[_TSolution], Union[int, float]]]:
     for move in neigh.moves(solution):
         incr = move.lower_bound_increment(solution)
         if incr is not None:

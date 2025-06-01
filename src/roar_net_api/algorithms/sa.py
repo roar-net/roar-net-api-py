@@ -3,11 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import random
+from logging import getLogger
 from math import exp
 from time import perf_counter
-from typing import Callable, Optional, Protocol
+from typing import Callable, Optional, Protocol, TypeVar
 
-from ..api.operations import (
+from ..operations import (
     SupportsApplyMove,
     SupportsCopySolution,
     SupportsLocalNeighbourhood,
@@ -16,17 +17,22 @@ from ..api.operations import (
     SupportsRandomMovesWithoutReplacement,
 )
 
-
-class Solution(SupportsCopySolution, SupportsObjectiveValue, Protocol): ...
-
-
-class Move(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[Solution], Protocol): ...
+log = getLogger(__name__)
 
 
-class Neighbourhood(SupportsRandomMovesWithoutReplacement[Solution, Move], Protocol): ...
+class _Solution(SupportsCopySolution, SupportsObjectiveValue, Protocol): ...
 
 
-class Problem(SupportsLocalNeighbourhood[Neighbourhood], Protocol): ...
+_TSolution = TypeVar("_TSolution", bound=_Solution)
+
+
+class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution], Protocol): ...
+
+
+class _Neighbourhood(SupportsRandomMovesWithoutReplacement[_TSolution, _Move[_TSolution]], Protocol): ...
+
+
+class _Problem(SupportsLocalNeighbourhood[_Neighbourhood[_TSolution]], Protocol): ...
 
 
 class LinearDecay:
@@ -48,13 +54,13 @@ class ExponentialAcceptance:
 
 
 def sa(
-    problem: Problem,
-    solution: Solution,
+    problem: _Problem[_TSolution],
+    solution: _TSolution,
     budget: float,
     init_temp: float,
     temperature: Optional[Callable[[float], float]] = None,
     acceptance: Optional[Callable[[float, float], float]] = None,
-) -> Solution:
+) -> _TSolution:
     if temperature is None:
         temperature = LinearDecay(init_temp)
 
@@ -79,6 +85,7 @@ def sa(
                 assert obj is not None
 
                 if bestobj is None or obj < bestobj:
+                    log.info(f"Best solution: {obj}")
                     best = solution.copy_solution()
                     bestobj = obj
                 break

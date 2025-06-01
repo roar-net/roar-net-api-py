@@ -4,11 +4,12 @@
 
 import random
 from collections.abc import Callable
+from logging import getLogger
 from operator import itemgetter
 from time import perf_counter
-from typing import Optional, Protocol, Union, cast
+from typing import Optional, Protocol, TypeVar, Union, cast
 
-from ..api.operations import (
+from ..operations import (
     SupportsApplyMove,
     SupportsConstructionNeighbourhood,
     SupportsCopySolution,
@@ -18,29 +19,36 @@ from ..api.operations import (
     SupportsObjectiveValue,
 )
 
-
-class Solution(SupportsObjectiveValue, SupportsCopySolution, Protocol): ...
-
-
-class Move(SupportsLowerBoundIncrement[Solution], SupportsApplyMove[Solution], Protocol): ...
+log = getLogger(__name__)
 
 
-class Neighbourhood(SupportsMoves[Solution, Move], Protocol): ...
+class _Solution(SupportsObjectiveValue, SupportsCopySolution, Protocol): ...
 
 
-class Problem(SupportsConstructionNeighbourhood[Neighbourhood], SupportsEmptySolution[Solution], Protocol): ...
+_TSolution = TypeVar("_TSolution", bound=_Solution)
 
 
-LocalSearchFunc = Callable[[Problem, Solution], Solution]
+class _Move(SupportsLowerBoundIncrement[_TSolution], SupportsApplyMove[_TSolution], Protocol): ...
+
+
+class _Neighbourhood(SupportsMoves[_TSolution, _Move[_TSolution]], Protocol): ...
+
+
+class _Problem(
+    SupportsConstructionNeighbourhood[_Neighbourhood[_TSolution]], SupportsEmptySolution[_TSolution], Protocol
+): ...
+
+
+LocalSearchFunc = Callable[[_Problem[_TSolution], _TSolution], _TSolution]
 
 
 def grasp(
-    problem: Problem,
+    problem: _Problem[_TSolution],
     budget: float,
-    solution: Optional[Solution] = None,
+    solution: Optional[_TSolution] = None,
     alpha: float = 0.1,
-    local_search: Optional[LocalSearchFunc] = None,
-) -> Solution:
+    local_search: Optional[LocalSearchFunc[_TSolution]] = None,
+) -> _TSolution:
     start = perf_counter()
 
     neigh = problem.construction_neighbourhood()
@@ -76,12 +84,15 @@ def grasp(
                 bobj = cast(Union[int, float], b.objective_value())
             bobj = cast(Union[int, float], bobj)
             if bestobj is None or bobj < bestobj:
+                log.info(f"Best solution: {bobj}")
                 best = b
                 bestobj = bobj
     return best
 
 
-def _valid_moves_and_increments(neigh: Neighbourhood, solution: Solution) -> list[tuple[Move, Union[int, float]]]:
+def _valid_moves_and_increments(
+    neigh: _Neighbourhood[_TSolution], solution: _TSolution
+) -> list[tuple[_Move[_TSolution], Union[int, float]]]:
     res = []
     for m in neigh.moves(solution):
         incr = m.lower_bound_increment(solution)

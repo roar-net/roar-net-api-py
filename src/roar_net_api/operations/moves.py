@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Protocol, TypeVar
 from collections.abc import Iterable
+from typing import Protocol, TypeVar
 
 Solution = TypeVar("Solution", contravariant=True)
 Move = TypeVar("Move", covariant=True)

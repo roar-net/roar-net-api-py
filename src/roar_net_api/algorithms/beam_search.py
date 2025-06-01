@@ -4,10 +4,11 @@
 
 import bisect
 from collections.abc import Callable
+from logging import getLogger
 from operator import itemgetter
 from typing import Generic, Optional, Protocol, Self, TypeVar, Union, cast
 
-from ..api.operations import (
+from ..operations import (
     SupportsApplyMove,
     SupportsConstructionNeighbourhood,
     SupportsCopySolution,
@@ -18,27 +19,34 @@ from ..api.operations import (
     SupportsObjectiveValue,
 )
 
-
-class Solution(SupportsLowerBound, SupportsObjectiveValue, SupportsCopySolution, Protocol): ...
-
-
-class Move(SupportsLowerBoundIncrement[Solution], SupportsApplyMove[Solution], Protocol): ...
+log = getLogger(__name__)
 
 
-class Neighbourhood(SupportsMoves[Solution, Move], Protocol): ...
+class _Solution(SupportsLowerBound, SupportsObjectiveValue, SupportsCopySolution, Protocol): ...
 
 
-class Problem(SupportsConstructionNeighbourhood[Neighbourhood], SupportsEmptySolution[Solution], Protocol): ...
+_TSolution = TypeVar("_TSolution", bound=_Solution)
 
 
-BSList = list[tuple[Union[int, float], Solution]]
+class _Move(SupportsLowerBoundIncrement[_TSolution], SupportsApplyMove[_TSolution], Protocol): ...
+
+
+class _Neighbourhood(SupportsMoves[_TSolution, _Move[_TSolution]], Protocol): ...
+
+
+class _Problem(
+    SupportsConstructionNeighbourhood[_Neighbourhood[_TSolution]], SupportsEmptySolution[_TSolution], Protocol
+): ...
+
+
+BSList = list[tuple[Union[int, float], _TSolution]]
 
 
 class KeyProtocol(Protocol):
     def __lt__(self, value: Self, /) -> bool: ...
 
 
-Key = TypeVar("Key", bound="KeyProtocol")
+Key = TypeVar("Key", bound=KeyProtocol)
 Value = TypeVar("Value")
 KeyFunc = Callable[[Value], Key]
 
@@ -56,17 +64,16 @@ class KMin(Generic[Key, Value]):
         self.values: list[Value] = []
 
     def insert(self, value: Value):
+        key = self.key(value)
         if len(self.values) == self.k:
-            key = self.key(value)
-            if key < self.keys[-1]:
-                i = bisect.bisect_right(self.keys, key)
-                self.keys.insert(i, key)
-                self.keys.pop()
-                self.values.insert(i, value)
-                self.values.pop()
-        else:
-            self.keys.append(self.key(value))
-            self.values.append(value)
+            if key > self.keys[-1]:
+                return
+        i = bisect.bisect_right(self.keys, key)
+        self.keys.insert(i, key)
+        self.values.insert(i, value)
+        if len(self.values) > self.k:
+            self.keys.pop()
+            self.values.pop()
 
     def __iter__(self):
         return self.values.__iter__()
@@ -75,7 +82,7 @@ class KMin(Generic[Key, Value]):
         return self.values.__len__()
 
 
-def beam_search(problem: Problem, solution: Optional[Solution] = None, bw: int = 10) -> Solution:
+def beam_search(problem: _Problem[_TSolution], solution: Optional[_TSolution] = None, bw: int = 10) -> _TSolution:
     neigh = problem.construction_neighbourhood()
 
     if solution is None:
@@ -89,10 +96,12 @@ def beam_search(problem: Problem, solution: Optional[Solution] = None, bw: int =
     if lb is None:
         return best
 
-    v: BSList = [(lb, best)]
+    v: BSList[_TSolution] = [(lb, best)]
 
     while True:
-        candidates = KMin[Union[int, float], tuple[Union[int, float], Solution, Move]](bw, key=itemgetter(0))
+        candidates = KMin[Union[int, float], tuple[Union[int, float], _TSolution, _Move[_TSolution]]](
+            bw, key=itemgetter(0)
+        )
         for lb, s in v:
             for m in neigh.moves(s):
                 incr = m.lower_bound_increment(s)
@@ -105,10 +114,11 @@ def beam_search(problem: Problem, solution: Optional[Solution] = None, bw: int =
         v = []
         for lb, s, m in candidates:
             ns = s.copy_solution()
-            m.apply_move(s)
+            ns = m.apply_move(ns)
             v.append((cast(Union[int, float], lb), ns))
             obj = ns.objective_value()
             if obj is not None and (bestobj is None or obj < bestobj):
+                log.info(f"Best solution: {obj}")
                 best = ns
                 bestobj = obj
 

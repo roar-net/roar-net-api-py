@@ -3,29 +3,32 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Iterable
-from typing import Protocol, Union
+from logging import getLogger
+from typing import Protocol, TypeVar, Union
 
-from ..api.operations import (
+from ..operations import (
     SupportsApplyMove,
     SupportsLocalNeighbourhood,
     SupportsObjectiveValueIncrement,
     SupportsRandomMovesWithoutReplacement,
 )
 
-
-class Solution(Protocol): ...
-
-
-class Move(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[Solution], Protocol): ...
+log = getLogger(__name__)
 
 
-class Neighbourhood(SupportsRandomMovesWithoutReplacement[Solution, Move], Protocol): ...
+_TSolution = TypeVar("_TSolution")
 
 
-class Problem(SupportsLocalNeighbourhood[Neighbourhood], Protocol): ...
+class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution], Protocol): ...
 
 
-def first_improvement(problem: Problem, solution: Solution) -> Solution:
+class _Neighbourhood(SupportsRandomMovesWithoutReplacement[_TSolution, _Move[_TSolution]], Protocol): ...
+
+
+class _Problem(SupportsLocalNeighbourhood[_Neighbourhood[_TSolution]], Protocol): ...
+
+
+def first_improvement(problem: _Problem[_TSolution], solution: _TSolution) -> _TSolution:
     neigh = problem.local_neighbourhood()
 
     move_iter = iter(_valid_moves_and_increments(neigh, solution))
@@ -34,6 +37,7 @@ def first_improvement(problem: Problem, solution: Solution) -> Solution:
         move, increment = move_and_incr
 
         if increment < 0:
+            log.info(f"Found increment: {increment}")
             move.apply_move(solution)
             move_iter = iter(_valid_moves_and_increments(neigh, solution))
 
@@ -42,7 +46,9 @@ def first_improvement(problem: Problem, solution: Solution) -> Solution:
     return solution
 
 
-def _valid_moves_and_increments(neigh: Neighbourhood, solution: Solution) -> Iterable[tuple[Move, Union[int, float]]]:
+def _valid_moves_and_increments(
+    neigh: _Neighbourhood[_TSolution], solution: _TSolution
+) -> Iterable[tuple[_Move[_TSolution], Union[int, float]]]:
     for move in neigh.random_moves_without_replacement(solution):
         incr = move.objective_value_increment(solution)
         assert incr is not None
