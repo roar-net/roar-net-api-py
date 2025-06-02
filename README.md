@@ -65,7 +65,7 @@ yet been published in `pypi` you can add the git repository. For
 example, to add it to a `uv` project you can do:
 
 ```bash
-uv add git+ssh://git@github.com/roar-net/roar-net-api-py
+uv add git+ssh://git@github.com/roar-net/roar-net-api-py --branch main
 ```
 
 To add it to a `requirements.txt` file you can add:
