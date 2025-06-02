@@ -2,13 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from ..operations import (
     SupportsMoves,
-    SupportsRandomMovesWithoutReplacement,
     SupportsRandomMove,
+    SupportsRandomMovesWithoutReplacement,
 )
 
+_MoveT = TypeVar("_MoveT", covariant=True)
+_SolutionT = TypeVar("_SolutionT", contravariant=True)
 
-class Neighbourhood(SupportsMoves, SupportsRandomMovesWithoutReplacement, SupportsRandomMove, Protocol): ...
+
+class Neighbourhood(
+    SupportsMoves[_SolutionT, _MoveT],
+    SupportsRandomMovesWithoutReplacement[_SolutionT, _MoveT],
+    SupportsRandomMove[_SolutionT, _MoveT],
+    Protocol,
+): ...

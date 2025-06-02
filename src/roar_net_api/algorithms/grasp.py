@@ -61,22 +61,22 @@ def grasp(
 
     while perf_counter() - start < budget:
         s = solution.copy_solution()
-        b = s.copy_solution()
-        bobj = s.objective_value()
+        b = None
+        bobj = None
 
-        C = _valid_moves_and_increments(neigh, s)
-        while len(C) != 0:
-            cmin = min(C, key=itemgetter(1))[1]
-            cmax = max(C, key=itemgetter(1))[1]
+        cl = _valid_moves_and_increments(neigh, s)
+        while len(cl) != 0:
+            cmin = min(cl, key=itemgetter(1))[1]
+            cmax = max(cl, key=itemgetter(1))[1]
             thresh = cmin + alpha * (cmax - cmin)
-            RCL = [m for m, decr in C if decr <= thresh]
-            m = random.choice(RCL)
+            rcl = [m for m, decr in cl if decr <= thresh]
+            m = random.choice(rcl)
             m.apply_move(s)
             obj = s.objective_value()
             if obj is not None and (bobj is None or obj < bobj):
                 b = s.copy_solution()
                 bobj = b.objective_value()
-            C = _valid_moves_and_increments(neigh, s)
+            cl = _valid_moves_and_increments(neigh, s)
         if b is not None:
             if local_search is not None:
                 b = local_search(problem, b)
@@ -93,7 +93,7 @@ def grasp(
 def _valid_moves_and_increments(
     neigh: _Neighbourhood[_TSolution], solution: _TSolution
 ) -> list[tuple[_Move[_TSolution], Union[int, float]]]:
-    res = []
+    res: list[tuple[_Move[_TSolution], Union[int, float]]] = []
     for m in neigh.moves(solution):
         incr = m.lower_bound_increment(solution)
         if incr is not None:

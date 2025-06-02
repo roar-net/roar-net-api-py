@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import bisect
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from logging import getLogger
 from operator import itemgetter
-from typing import Generic, Optional, Protocol, Self, TypeVar, Union, cast
+from typing import Generic, Optional, Protocol, Self, TypeVar, Union
 
 from ..operations import (
     SupportsApplyMove,
@@ -63,7 +63,7 @@ class KMin(Generic[Key, Value]):
         self.keys: list[Key] = []
         self.values: list[Value] = []
 
-    def insert(self, value: Value):
+    def insert(self, value: Value) -> None:
         key = self.key(value)
         if len(self.values) == self.k:
             if key > self.keys[-1]:
@@ -75,10 +75,10 @@ class KMin(Generic[Key, Value]):
             self.keys.pop()
             self.values.pop()
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Value]:
         return self.values.__iter__()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.values.__len__()
 
 
@@ -115,7 +115,7 @@ def beam_search(problem: _Problem[_TSolution], solution: Optional[_TSolution] = 
         for lb, s, m in candidates:
             ns = s.copy_solution()
             ns = m.apply_move(ns)
-            v.append((cast(Union[int, float], lb), ns))
+            v.append((lb, ns))
             obj = ns.objective_value()
             if obj is not None and (bestobj is None or obj < bestobj):
                 log.info(f"Best solution: {obj}")

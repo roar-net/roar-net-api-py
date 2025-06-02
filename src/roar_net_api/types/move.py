@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from ..operations import (
     SupportsApplyMove,
@@ -11,7 +11,14 @@ from ..operations import (
     SupportsObjectiveValueIncrement,
 )
 
+_SolutionT = TypeVar("_SolutionT")
+_InverseMoveT = TypeVar("_InverseMoveT", covariant=True)
+
 
 class Move(
-    SupportsApplyMove, SupportsInvertMove, SupportsLowerBoundIncrement, SupportsObjectiveValueIncrement, Protocol
+    SupportsApplyMove[_SolutionT],
+    SupportsInvertMove[_InverseMoveT],
+    SupportsLowerBoundIncrement[_SolutionT],
+    SupportsObjectiveValueIncrement[_SolutionT],
+    Protocol,
 ): ...
