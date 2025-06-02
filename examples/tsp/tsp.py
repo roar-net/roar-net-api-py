@@ -4,13 +4,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import logging
 import math
 import random
 import sys
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from logging import getLogger
-from typing import Optional, Self, TextIO, final
+from typing import Optional, Protocol, Self, TextIO, TypeVar, final
 
 from roar_net_api.operations import (
     SupportsApplyMove,
@@ -31,12 +33,19 @@ from roar_net_api.operations import (
 log = getLogger(__name__)
 
 
-def argmin(seq):
+class _SupportsLT(Protocol):
+    def __lt__(self, other: Self) -> bool: ...
+
+
+_T = TypeVar("_T", bound=_SupportsLT)
+
+
+def argmin(seq: Sequence[_T]) -> int:
     return min(range(len(seq)), key=seq.__getitem__)
 
 
-def sparse_fisher_yates_iter(n):
-    p = dict()
+def sparse_fisher_yates_iter(n: int) -> Iterable[int]:
+    p: dict[int, int] = dict()
     for i in range(n - 1, -1, -1):
         r = random.randrange(i + 1)
         yield p.get(r, r)
@@ -50,34 +59,34 @@ def sparse_fisher_yates_iter(n):
 
 @final
 class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound):
-    def __init__(self, problem, tour, not_visited, lb):
+    def __init__(self, problem: Problem, tour: list[int], not_visited: set[int], lb: int):
         self.problem = problem
         self.tour = tour
         self.not_visited = not_visited
         self.lb = lb
 
-    def __str__(self):
+    def __str__(self) -> str:
         return " ".join(map(str, self.tour))
 
     @property
-    def is_feasible(self):
+    def is_feasible(self) -> bool:
         return len(self.not_visited) == 0
 
-    def to_textio(self, f: TextIO):
+    def to_textio(self, f: TextIO) -> None:
         f.write("NAME : %s\nTYPE : TOUR\n" % (self.problem.name + ".tour"))
         f.write("DIMENSION : %d\nTOUR_SECTION\n" % self.problem.n)
-        f.write("\n".join(map(lambda x: str(x+1), self.tour)))
+        f.write("\n".join(map(lambda x: str(x + 1), self.tour)))
         f.write("\nEOF\n")
 
     def copy_solution(self) -> Self:
         return self.__class__(self.problem, self.tour.copy(), self.not_visited.copy(), self.lb)
 
-    def objective_value(self) -> Optional[float]:
+    def objective_value(self) -> Optional[int]:
         if self.is_feasible:
             return self.lb
         return None
 
-    def lower_bound(self) -> float:
+    def lower_bound(self) -> int:
         return self.lb
 
 
@@ -86,7 +95,7 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
 
 @final
 class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution]):
-    def __init__(self, neighbourhood, i, j):
+    def __init__(self, neighbourhood: AddNeighbourhood, i: int, j: int):
         self.neighbourhood = neighbourhood
         # i and j are cities
         self.i = i
@@ -119,7 +128,7 @@ class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution]
 
 @final
 class TwoOptMove(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[Solution]):
-    def __init__(self, neighbourhood, ix, jx):
+    def __init__(self, neighbourhood: TwoOptNeighbourhood, ix: int, jx: int):
         self.neighbourhood = neighbourhood
         # ix and jx are indices
         self.ix = ix
@@ -149,13 +158,11 @@ class TwoOptMove(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[So
 # ------------------------------- Neighbourhood ------------------------------
 
 
-class Neighbourhood:
-    def __init__(self, problem):
+@final
+class AddNeighbourhood(SupportsMoves[Solution, AddMove]):
+    def __init__(self, problem: Problem):
         self.problem = problem
 
-
-@final
-class AddNeighbourhood(Neighbourhood, SupportsMoves[Solution, AddMove]):
     def moves(self, solution: Solution) -> Iterable[AddMove]:
         assert self.problem == solution.problem
         i = solution.tour[-1]
@@ -165,11 +172,13 @@ class AddNeighbourhood(Neighbourhood, SupportsMoves[Solution, AddMove]):
 
 @final
 class TwoOptNeighbourhood(
-    Neighbourhood,
     SupportsMoves[Solution, TwoOptMove],
     SupportsRandomMovesWithoutReplacement[Solution, TwoOptMove],
     SupportsRandomMove[Solution, TwoOptMove],
 ):
+    def __init__(self, problem: Problem):
+        self.problem = problem
+
     def moves(self, solution: Solution) -> Iterable[TwoOptMove]:
         assert self.problem == solution.problem
         n = self.problem.n
@@ -231,15 +240,15 @@ class Problem(
     SupportsEmptySolution[Solution],
     SupportsRandomSolution[Solution],
 ):
-    def __init__(self, dist, name):
+    def __init__(self, dist: tuple[tuple[int, ...], ...], name: str):
         self.dist = tuple(tuple(t) for t in dist)
         self.name = name
         self.n = len(self.dist)
-        self.c_nbhood = None
-        self.l_nbhood = None
+        self.c_nbhood: Optional[AddNeighbourhood] = None
+        self.l_nbhood: Optional[TwoOptNeighbourhood] = None
 
-    def __str__(self):
-        out = []
+    def __str__(self) -> str:
+        out: list[str] = []
         for row in self.dist:
             out.append(" ".join(map(str, row)))
         return "\n".join(out)
@@ -255,41 +264,40 @@ class Problem(
         return self.l_nbhood
 
     @classmethod
-    def from_textio(cls, f):
+    def from_textio(cls, f: TextIO) -> Self:
         """
         Create a problem from a text I/O source `f` in TSPLIB format
         """
         s = f.readline().strip()
-        n = dt = None
-        name = "unamed"
+        n = None
+        dt = None
+        name = "unnamed"
         while s != "NODE_COORD_SECTION" and s != "":
-            l = s.split(":", 1)
-            k = l[0].strip()
+            line = s.split(":", 1)
+            k = line[0].strip()
             if k == "DIMENSION":
-                n = int(l[1])
+                n = int(line[1])
             elif k == "EDGE_WEIGHT_TYPE":
-                dt = l[1].strip()
+                dt = line[1].strip()
             elif k == "NAME":
-                name = l[1].strip()
+                name = line[1].strip()
             s = f.readline().strip()
         if n is not None and dt == "EUC_2D":
-            kxy = []
+            kxy: list[tuple[float, ...]] = []
             for i in range(n):
                 kxy.append(tuple(map(float, f.readline().split())))
             kxy = sorted(kxy)
-            dist = []
+            dist: list[tuple[int, ...]] = []
             for i in range(n):
-                if kxy[i][0] != i+1:
-                    print("ERROR: Invalid instance")
-                    return None
-                aux = []
+                if kxy[i][0] != i + 1:
+                    raise Exception("Invalid instance")
+                aux: list[int] = []
                 for j in range(n):
                     aux.append(int(0.5 + math.sqrt((kxy[i][1] - kxy[j][1]) ** 2 + (kxy[i][2] - kxy[j][2]) ** 2)))
                 dist.append(tuple(aux))
-            dist = tuple(dist)
-            return cls(dist, name)
+            return cls(tuple(dist), name)
         else:
-            print("ERROR: Instance format not supported")
+            raise Exception(f"Instance format {dt} not supported")
 
     def empty_solution(self) -> Solution:
         return Solution(self, [0], set(range(1, self.n)), 0)
@@ -325,5 +333,4 @@ if __name__ == "__main__":
     log.info(f"Objective value after local search: {solution.objective_value()}")
 
     # Print the final solution to stdout
-    print(str(solution))
     solution.to_textio(sys.stdout)
