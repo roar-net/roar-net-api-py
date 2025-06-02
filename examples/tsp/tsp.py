@@ -65,7 +65,7 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
 
     def to_textio(self, f: TextIO):
         f.write("NAME : %s\nTYPE : TOUR\n" % (self.problem.name + ".tour"))
-        f.write("DIMENSION : %d\nTOUR_SECTION\n" % len(self.tour))
+        f.write("DIMENSION : %d\nTOUR_SECTION\n" % self.problem.n)
         f.write("\n".join(map(lambda x: str(x+1), self.tour)))
         f.write("\nEOF\n")
 
