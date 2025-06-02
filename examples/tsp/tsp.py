@@ -64,7 +64,10 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
         return len(self.not_visited) == 0
 
     def to_textio(self, f: TextIO):
-        f.write(str(self))
+        f.write("NAME : %s\nTYPE : TOUR\n" % (self.problem.name + ".tour"))
+        f.write("DIMENSION : %d\nTOUR_SECTION\n" % len(self.tour))
+        f.write("\n".join(map(lambda x: str(x+1), self.tour)))
+        f.write("\nEOF\n")
 
     def copy_solution(self) -> Self:
         return self.__class__(self.problem, self.tour.copy(), self.not_visited.copy(), self.lb)
@@ -228,18 +231,12 @@ class Problem(
     SupportsEmptySolution[Solution],
     SupportsRandomSolution[Solution],
 ):
-    def __init__(self, xy):
-        self.n = len(xy)
-        self.xy = tuple([(x, y) for x, y in xy])
+    def __init__(self, dist, name):
+        self.dist = tuple(tuple(t) for t in dist)
+        self.name = name
+        self.n = len(self.dist)
         self.c_nbhood = None
         self.l_nbhood = None
-        dist = []
-        for i in range(self.n):
-            aux = []
-            for j in range(self.n):
-                aux.append(math.sqrt((self.xy[i][0] - self.xy[j][0]) ** 2 + (self.xy[i][1] - self.xy[j][1]) ** 2))
-            dist.append(tuple(aux))
-        self.dist = tuple(dist)
 
     def __str__(self):
         out = [str(self.n)]
@@ -260,13 +257,39 @@ class Problem(
     @classmethod
     def from_textio(cls, f):
         """
-        Create a problem from a text I/O source `f`
+        Create a problem from a text I/O source `f` in TSPLIB format
         """
-        n = int(f.readline())
-        xy = []
-        for i in range(n):
-            xy.append(tuple(map(float, f.readline().split())))
-        return cls(xy)
+        s = f.readline().strip()
+        n = dt = None
+        name = "unamed"
+        while s != "NODE_COORD_SECTION" and s != "":
+            l = s.split(":", 1)
+            k = l[0].strip()
+            if k == "DIMENSION":
+                n = int(l[1])
+            elif k == "EDGE_WEIGHT_TYPE":
+                dt = l[1].strip()
+            elif k == "NAME":
+                name = l[1].strip()
+            s = f.readline().strip()
+        if n is not None and dt == "EUC_2D":
+            kxy = []
+            for i in range(n):
+                kxy.append(tuple(map(float, f.readline().split())))
+            kxy = sorted(kxy)
+            dist = []
+            for i in range(n):
+                if kxy[i][0] != i+1:
+                    print("ERROR: Invalid instance")
+                    return None
+                aux = []
+                for j in range(n):
+                    aux.append(int(0.5 + math.sqrt((kxy[i][1] - kxy[j][1]) ** 2 + (kxy[i][2] - kxy[j][2]) ** 2)))
+                dist.append(tuple(aux))
+            dist = tuple(dist)
+            return cls(dist, name)
+        else:
+            print("ERROR: Instance format not supported")
 
     def empty_solution(self) -> Solution:
         return Solution(self, [0], set(range(1, self.n)), 0)
@@ -303,3 +326,4 @@ if __name__ == "__main__":
 
     # Print the final solution to stdout
     print(str(solution))
+    solution.to_textio(sys.stdout)
