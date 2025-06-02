@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from ..operations import (
     SupportsConstructionNeighbourhood,
@@ -13,13 +13,17 @@ from ..operations import (
     SupportsRandomSolution,
 )
 
+_TConstructiveNeighbourhood = TypeVar("_TConstructiveNeighbourhood", covariant=True)
+_TLocalNeighbourhood = TypeVar("_TLocalNeighbourhood", covariant=True)
+_TSolution = TypeVar("_TSolution", covariant=True)
+
 
 class Problem(
-    SupportsConstructionNeighbourhood,
-    SupportsDestructionNeighbourhood,
-    SupportsEmptySolution,
-    SupportsHeuristicSolution,
-    SupportsLocalNeighbourhood,
-    SupportsRandomSolution,
+    SupportsConstructionNeighbourhood[_TConstructiveNeighbourhood],
+    SupportsDestructionNeighbourhood[_TLocalNeighbourhood],
+    SupportsEmptySolution[_TSolution],
+    SupportsHeuristicSolution[_TSolution],
+    SupportsLocalNeighbourhood[_TSolution],
+    SupportsRandomSolution[_TSolution],
     Protocol,
 ): ...
