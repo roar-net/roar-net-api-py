@@ -239,9 +239,9 @@ class Problem(
         self.l_nbhood = None
 
     def __str__(self):
-        out = [str(self.n)]
-        for i, j in self.xy:
-            out.append("%d %d" % (i, j))
+        out = []
+        for row in self.dist:
+            out.append(" ".join(map(str, row)))
         return "\n".join(out)
 
     def construction_neighbourhood(self) -> AddNeighbourhood:
