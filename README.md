@@ -20,8 +20,9 @@ the specification.
 ### Protocol types
 
 Protocol types for the operations in the ROAR-NET API Specification
-are defined in the `roar_net_api.operations` module. For example, the
-`apply_move` operation is defined in a protocol `SupportsApplyMove`.
+are defined in the module [roar_net_api.operations](src/roar_net_api/operations). 
+For example, the operation
+[apply_move()](src/roar_net_api/operations/apply_move.py) is defined in a protocol `SupportsApplyMove`.
 
 This library considers an object-oriented approach, such that
 operations should be implemented by a class of the first argument
@@ -31,7 +32,7 @@ type. For example, for the operation:
 apply_move(Move, Solution) -> Solution
 ```
 
-we consider that it should be implemented as part of the Move class,
+we consider that it should be implemented as part of the class `Move`,
 which means that the protocol type is defined as:
 
 ```python
@@ -44,8 +45,8 @@ class SupportsApplyMove(Protocol[SolutionT]):
 ### Algorithms
 
 We support several algorithms that can be implemented following the
-ROAR-NET API Specification. You can find the algorithms in the
-`roar_net_api.algorithms` module. Here is the current list of
+ROAR-NET API Specification. You can find the algorithms in the module 
+[roar_net_api.algorithms](src/roar_net_api/algorithms). Here is the current list of
 supported algorithms:
 
 - Beam search: `beam_search`
@@ -61,14 +62,14 @@ supported algorithms:
 ### Adding it to your project
 
 To use this library add it to your project. Since the library has not
-yet been published in `pypi` you can add the git repository. For
+yet been published in `pypi`, you can add the git repository. For
 example, to add it to a `uv` project you can do:
 
 ```bash
 uv add git+ssh://git@github.com/roar-net/roar-net-api-py --branch main
 ```
 
-To add it to a `requirements.txt` file you can add:
+To add it to the file `requirements.txt`, you can add:
 
 ```text
 roar-net-api @ git+ssh://git@github.com/roar-net/roar-net-api-py.git@main
@@ -86,8 +87,8 @@ pip install git+ssh://git@github.com/roar-net/roar-net-api-py.git@main
 
 To implement a model, we recommend that you take advantage of python
 type hints to warn you about potential issues. For example, if you
-want your problem class to support the `empty_solution` and
-`constructive_neighbourhood` operations you can inherit from the
+would like your problem class to support the operations `empty_solution()` and
+`constructive_neighbourhood()`, you can inherit from the
 protocol types for these operations to get type checking, for example:
 
 ```python
