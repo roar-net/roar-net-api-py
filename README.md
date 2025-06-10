@@ -6,8 +6,9 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # ROAR-NET API - Python
 
-This repository contains a library with the python implementation of the ROAR-NET API
-Specification and several algorithms. You can find the full specification in the
+This repository contains a library with the python implementation of
+the ROAR-NET API Specification and several algorithms. You can find
+the full specification in the
 [roar-net-api-spec](https://github.com/roar-net/roar-net-api-spec)
 repository.
 
@@ -20,9 +21,11 @@ the specification.
 ### Protocol types
 
 Protocol types for the operations in the ROAR-NET API Specification
-are defined in the module [roar_net_api.operations](src/roar_net_api/operations). 
-For example, the operation
-[apply_move()](src/roar_net_api/operations/apply_move.py) is defined in a protocol `SupportsApplyMove`.
+are defined in the module
+[roar_net_api.operations](src/roar_net_api/operations).  For example,
+the operation
+[apply_move()](src/roar_net_api/operations/apply_move.py) is defined
+in a protocol `SupportsApplyMove`.
 
 This library considers an object-oriented approach, such that
 operations should be implemented by a class of the first argument
@@ -45,9 +48,9 @@ class SupportsApplyMove(Protocol[SolutionT]):
 ### Algorithms
 
 We support several algorithms that can be implemented following the
-ROAR-NET API Specification. You can find the algorithms in the module 
-[roar_net_api.algorithms](src/roar_net_api/algorithms). Here is the current list of
-supported algorithms:
+ROAR-NET API Specification. You can find the algorithms in the module
+[roar_net_api.algorithms](src/roar_net_api/algorithms). Here is the
+current list of supported algorithms:
 
 - Beam search: `beam_search`
 - Best improvement: `best_improvement` 
@@ -61,27 +64,15 @@ supported algorithms:
 
 ### Adding it to your project
 
-To use this library add it to your project. Since the library has not
-yet been published in `pypi`, you can add the git repository. For
-example, to add it to a `uv` project you can do:
+To use this library add it to your project. For example, to add it to
+a `uv` project you can do:
 
 ```bash
-uv add git+ssh://git@github.com/roar-net/roar-net-api-py --branch main
+uv add roar-net-api
 ```
 
-To add it to the file `requirements.txt`, you can add:
-
-```text
-roar-net-api @ git+ssh://git@github.com/roar-net/roar-net-api-py.git@main
-```
-
-replacing `@main` with a different branch if you want.
-
-To install it directly with `pip` you can do
-
-```bash
-pip install git+ssh://git@github.com/roar-net/roar-net-api-py.git@main
-```
+Alternatively, you can add it to a `requirements.txt` file or install
+it with `pip` manually.
 
 ### Implement a model
 
