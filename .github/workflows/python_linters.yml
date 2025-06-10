@@ -1,6 +1,10 @@
+# SPDX-FileCopyrightText: © 2025 Authors of the roar-net-api-py project <https://github.com/roar-net/roar-net-api-py/blob/main/AUTHORS>
+#
+# SPDX-License-Identifier: CC0-1.0
+
 name: Python linters
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -22,5 +26,3 @@ jobs:
       run: uv run -- mypy
     - name: Run pyright
       run: uv run -- pyright
-
-    
