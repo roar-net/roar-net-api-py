@@ -53,7 +53,7 @@ ROAR-NET API Specification. You can find the algorithms in the module
 is the current list of supported algorithms:
 
 - Beam search: `beam_search`
-- Best improvement: `best_improvement` 
+- Best improvement: `best_improvement`
 - First improvement: `first_improvement`
 - GRASP: `grasp`
 - Greedy construction: `greedy_construction`
@@ -91,17 +91,17 @@ from roar_net_api.operations import (
 
 class ConstructiveNeighbourhood:
   ...
-   
+
 class Solution:
   ...
-   
+
 class Problem(
   SupportsEmptySolution[Solution],
   SupportsConstructiveNeighbourhood[ConstructiveNeighbourhood]
 ):
   def empty_solution(self) -> Solution:
     ...
-    
+
   def constructive_neighbourhood(self) -> ConstructiveNeighbourhood:
     ...
 ```
@@ -130,10 +130,8 @@ The code is checked with the following linters:
 
 - `ruff`
 - `mypy` in `strict` mode
-- `pyright` in `strict` mode
 
-Pull requests are checked against all of these linters, to make sure
-there are no mistakes.
+Pull requests are checked against these linters.
 
 ## Copyright and license
 

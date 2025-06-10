@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: © 2025 Authors of the roar-net-api-py project <https://github.com/roar-net/roar-net-api-py/blob/main/AUTHORS>
+#
+# SPDX-License-Identifier: CC0-1.0
+
+name: Python checks
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+
+jobs:
+  linters:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "pypy3.11"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install uv and set the python version
+      uses: astral-sh/setup-uv@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install the project
+      run: uv sync --dev
+    - name: Run ruff check
+      run: uv run -- ruff check
+    - name: Run ruff format check
+      run: uv run -- ruff format --check
+    - name: Run mypy
+      run: uv run -- mypy
