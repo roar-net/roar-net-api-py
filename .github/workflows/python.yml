@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-name: Python linters
+name: Python checks
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
   pull_request:
 
 jobs:
-  build:
+  linters:
     runs-on: ubuntu-latest
     strategy:
       matrix:
