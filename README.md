@@ -22,10 +22,10 @@ the specification.
 
 Protocol types for the operations in the ROAR-NET API Specification
 are defined in the module
-[roar_net_api.operations](src/roar_net_api/operations).  For example,
-the operation
-[apply_move()](src/roar_net_api/operations/apply_move.py) is defined
-in a protocol `SupportsApplyMove`.
+[roar_net_api.operations](https://github.com/roar-net/roar-net-api-py/tree/main/src/roar_net_api/operations).
+For example, the operation
+[apply_move](https://github.com/roar-net/roar-net-api-py/tree/main/src/roar_net_api/operations/apply_move.py)
+is defined in a protocol `SupportsApplyMove`.
 
 This library considers an object-oriented approach, such that
 operations should be implemented by a class of the first argument
@@ -49,8 +49,8 @@ class SupportsApplyMove(Protocol[SolutionT]):
 
 We support several algorithms that can be implemented following the
 ROAR-NET API Specification. You can find the algorithms in the module
-[roar_net_api.algorithms](src/roar_net_api/algorithms). Here is the
-current list of supported algorithms:
+[roar_net_api.algorithms](https://github.com/roar-net/roar-net-api-py/tree/main/src/roar_net_api/algorithms). Here
+is the current list of supported algorithms:
 
 - Beam search: `beam_search`
 - Best improvement: `best_improvement` 
@@ -78,9 +78,10 @@ it with `pip` manually.
 
 To implement a model, we recommend that you take advantage of python
 type hints to warn you about potential issues. For example, if you
-would like your problem class to support the operations `empty_solution()` and
-`constructive_neighbourhood()`, you can inherit from the
-protocol types for these operations to get type checking, for example:
+would like your problem class to support the operations
+`empty_solution` and `constructive_neighbourhood`, you can inherit
+from the protocol types for these operations to get type checking, for
+example:
 
 ```python
 from roar_net_api.operations import (
