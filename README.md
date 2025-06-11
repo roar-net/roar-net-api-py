@@ -141,7 +141,7 @@ its licence.
 
 ## Acknowledgments
 
-This specification is based upon work from COST Action [Randomised
+This project is based upon work from COST Action [Randomised
 Optimisation Algorithms Research Network
 (ROAR-NET)](https://www.roar-net.eu/), CA22137, supported by COST
 (European Cooperation in Science and Technology).
