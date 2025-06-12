@@ -10,7 +10,7 @@ from ..operations import (
     SupportsApplyMove,
     SupportsLocalNeighbourhood,
     SupportsObjectiveValueIncrement,
-    SupportsRandomMove,
+    SupportsRandomMovesWithoutReplacement,
 )
 
 log = getLogger(__name__)
@@ -22,7 +22,7 @@ _TSolution = TypeVar("_TSolution")
 class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution], Protocol): ...
 
 
-class _Neighbourhood(SupportsRandomMove[_TSolution, _Move[_TSolution]], Protocol): ...
+class _Neighbourhood(SupportsRandomMovesWithoutReplacement[_TSolution, _Move[_TSolution]], Protocol): ...
 
 
 class _Problem(SupportsLocalNeighbourhood[_Neighbourhood[_TSolution]], Protocol): ...
@@ -34,16 +34,16 @@ def rls(problem: _Problem[_TSolution], solution: _TSolution, budget: float) -> _
     neigh = problem.local_neighbourhood()
 
     while perf_counter() - start < budget:
-        move = neigh.random_move(solution)
-
-        if move is None:
+        for move in neigh.random_moves_without_replacement(solution):
+            incr = move.objective_value_increment(solution)
+            assert incr is not None
+            if incr <= 0:
+                log.info(f"Found increment: {incr}")
+                solution = move.apply_move(solution)
+                break
+            if perf_counter() - start >= budget:
+                return solution
+        else:
             break
-
-        increment = move.objective_value_increment(solution)
-        assert increment is not None
-
-        if increment < 0:
-            log.info(f"Found increment: {increment}")
-            solution = move.apply_move(solution)
 
     return solution

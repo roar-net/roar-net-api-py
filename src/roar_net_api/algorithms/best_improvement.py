@@ -57,4 +57,5 @@ def _valid_moves_and_increments(
     for move in neigh.moves(solution):
         incr = move.objective_value_increment(solution)
         assert incr is not None
-        yield (move, incr)
+        if incr < 0:
+            yield (move, incr)
