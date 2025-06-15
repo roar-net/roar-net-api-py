@@ -8,6 +8,7 @@ from math import exp
 from time import perf_counter
 from typing import Callable, Optional, Protocol, TypeVar
 
+from ..values import Float
 from ..operations import (
     SupportsApplyMove,
     SupportsCopySolution,
@@ -19,14 +20,18 @@ from ..operations import (
 
 log = getLogger(__name__)
 
+_Value = int | float | Float
 
-class _Solution(SupportsCopySolution, SupportsObjectiveValue, Protocol): ...
+_Increment = int | float | Float
+
+
+class _Solution(SupportsCopySolution, SupportsObjectiveValue[_Value], Protocol): ...
 
 
 _TSolution = TypeVar("_TSolution", bound=_Solution)
 
 
-class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution], Protocol): ...
+class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution, _Increment], Protocol): ...
 
 
 class _Neighbourhood(SupportsRandomMovesWithoutReplacement[_TSolution, _Move[_TSolution]], Protocol): ...
@@ -46,11 +51,11 @@ class LinearDecay:
 class ExponentialAcceptance:
     def __init__(self) -> None: ...
 
-    def __call__(self, incr: float, t: float) -> float:
+    def __call__(self, incr: _Value, t: float) -> float:
         if incr <= 0:
             return 1.0
         else:
-            return exp(-incr / t)
+            return exp(-float(incr) / t)
 
 
 def sa(
@@ -59,7 +64,7 @@ def sa(
     budget: float,
     init_temp: float,
     temperature: Optional[Callable[[float], float]] = None,
-    acceptance: Optional[Callable[[float, float], float]] = None,
+    acceptance: Optional[Callable[[_Value, float], float]] = None,
 ) -> _TSolution:
     if temperature is None:
         temperature = LinearDecay(init_temp)
@@ -68,9 +73,13 @@ def sa(
         acceptance = ExponentialAcceptance()
 
     start = perf_counter()
+
     neigh = problem.local_neighbourhood()
+
     best = solution.copy_solution()
     bestobj = best.objective_value()
+    assert bestobj is not None
+
     while perf_counter() - start < budget:
         for move in neigh.random_moves_without_replacement(solution):
             t = temperature(1 - (perf_counter() - start) / budget)
@@ -84,7 +93,7 @@ def sa(
                 obj = solution.objective_value()
                 assert obj is not None
 
-                if bestobj is None or obj < bestobj:
+                if obj < float(bestobj):
                     log.info(f"Best solution: {obj}")
                     best = solution.copy_solution()
                     bestobj = obj

@@ -6,8 +6,9 @@ import bisect
 from collections.abc import Callable, Iterator
 from logging import getLogger
 from operator import itemgetter
-from typing import Generic, Optional, Protocol, Self, TypeVar, Union
+from typing import Generic, Optional, Protocol, Self, TypeVar, cast
 
+from ..values import Float
 from ..operations import (
     SupportsApplyMove,
     SupportsConstructionNeighbourhood,
@@ -21,14 +22,18 @@ from ..operations import (
 
 log = getLogger(__name__)
 
+_Value = int | float | Float
 
-class _Solution(SupportsLowerBound, SupportsObjectiveValue, SupportsCopySolution, Protocol): ...
+_Increment = int | float | Float
+
+
+class _Solution(SupportsLowerBound[_Value], SupportsObjectiveValue[_Value], SupportsCopySolution, Protocol): ...
 
 
 _TSolution = TypeVar("_TSolution", bound=_Solution)
 
 
-class _Move(SupportsLowerBoundIncrement[_TSolution], SupportsApplyMove[_TSolution], Protocol): ...
+class _Move(SupportsLowerBoundIncrement[_TSolution, _Increment], SupportsApplyMove[_TSolution], Protocol): ...
 
 
 class _Neighbourhood(SupportsMoves[_TSolution, _Move[_TSolution]], Protocol): ...
@@ -39,7 +44,7 @@ class _Problem(
 ): ...
 
 
-BSList = list[tuple[Union[int, float], _TSolution]]
+BSList = list[tuple[_Value, _TSolution]]
 
 
 class KeyProtocol(Protocol):
@@ -96,17 +101,17 @@ def beam_search(problem: _Problem[_TSolution], solution: Optional[_TSolution] = 
     if lb is None:
         return best
 
-    v: BSList[_TSolution] = [(lb, best)]
+    v: BSList[_TSolution] = BSList[_TSolution]([(lb, best)])
 
     while True:
-        candidates = KMin[Union[int, float], tuple[Union[int, float], _TSolution, _Move[_TSolution]]](
-            bw, key=itemgetter(0)
-        )
+        candidates = KMin[_Value, tuple[_Value, _TSolution, _Move[_TSolution]]](bw, key=itemgetter(0))
         for lb, s in v:
             for m in neigh.moves(s):
                 incr = m.lower_bound_increment(s)
                 if incr is not None:
-                    candidates.insert((lb + incr, s, m))
+                    assert type(lb) is type(incr)
+                    nlb = lb + incr  # type: ignore # lb and incr are addable as they are expected to be the same type
+                    candidates.insert((cast(_Value, nlb), s, m))
 
         if len(candidates) == 0:
             break
@@ -117,7 +122,7 @@ def beam_search(problem: _Problem[_TSolution], solution: Optional[_TSolution] = 
             ns = m.apply_move(ns)
             v.append((lb, ns))
             obj = ns.objective_value()
-            if obj is not None and (bestobj is None or obj < bestobj):
+            if obj is not None and (bestobj is None or obj < bestobj):  # type: ignore # obj and bestobj will be same type
                 log.info(f"Best solution: {obj}")
                 best = ns
                 bestobj = obj

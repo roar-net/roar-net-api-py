@@ -2,14 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from .move import Move
-from .neighbourhood import Neighbourhood
-from .problem import Problem
-from .solution import Solution
+from .float import Float
+from .lexicographic import Lexicographic
+from .pareto import Pareto
 
 __all__ = [
-    "Move",
-    "Neighbourhood",
-    "Problem",
-    "Solution",
+    "Float",
+    "Lexicographic",
+    "Pareto",
 ]

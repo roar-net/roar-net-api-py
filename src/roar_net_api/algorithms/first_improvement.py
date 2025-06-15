@@ -4,8 +4,9 @@
 
 from collections.abc import Iterable
 from logging import getLogger
-from typing import Protocol, TypeVar, Union
+from typing import Protocol, TypeVar
 
+from ..values import Float
 from ..operations import (
     SupportsApplyMove,
     SupportsLocalNeighbourhood,
@@ -15,11 +16,12 @@ from ..operations import (
 
 log = getLogger(__name__)
 
+_Increment = int | float | Float
 
 _TSolution = TypeVar("_TSolution")
 
 
-class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution], Protocol): ...
+class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution, _Increment], Protocol): ...
 
 
 class _Neighbourhood(SupportsRandomMovesWithoutReplacement[_TSolution, _Move[_TSolution]], Protocol): ...
@@ -48,7 +50,7 @@ def first_improvement(problem: _Problem[_TSolution], solution: _TSolution) -> _T
 
 def _valid_moves_and_increments(
     neigh: _Neighbourhood[_TSolution], solution: _TSolution
-) -> Iterable[tuple[_Move[_TSolution], Union[int, float]]]:
+) -> Iterable[tuple[_Move[_TSolution], _Increment]]:
     for move in neigh.random_moves_without_replacement(solution):
         incr = move.objective_value_increment(solution)
         assert incr is not None

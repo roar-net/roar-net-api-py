@@ -6,6 +6,7 @@ from logging import getLogger
 from time import perf_counter
 from typing import Protocol, TypeVar
 
+from ..values import Float
 from ..operations import (
     SupportsApplyMove,
     SupportsLocalNeighbourhood,
@@ -16,10 +17,12 @@ from ..operations import (
 log = getLogger(__name__)
 
 
+_Increment = int | float | Float
+
 _TSolution = TypeVar("_TSolution")
 
 
-class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution], Protocol): ...
+class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution, _Increment], Protocol): ...
 
 
 class _Neighbourhood(SupportsRandomMovesWithoutReplacement[_TSolution, _Move[_TSolution]], Protocol): ...

@@ -58,7 +58,7 @@ def sparse_fisher_yates_iter(n: int) -> Iterable[int]:
 
 
 @final
-class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound):
+class Solution(SupportsCopySolution, SupportsObjectiveValue[int], SupportsLowerBound[int]):
     def __init__(self, problem: Problem, tour: list[int], not_visited: set[int], lb: int):
         self.problem = problem
         self.tour = tour
@@ -94,7 +94,7 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
 
 
 @final
-class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution]):
+class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution, int]):
     def __init__(self, neighbourhood: AddNeighbourhood, i: int, j: int):
         self.neighbourhood = neighbourhood
         # i and j are cities
@@ -115,7 +115,7 @@ class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution]
         solution.not_visited.remove(self.j)
         return solution
 
-    def lower_bound_increment(self, solution: Solution) -> float:
+    def lower_bound_increment(self, solution: Solution) -> int:
         assert solution.tour[-1] == self.i
         prob = solution.problem
         incr = prob.dist[self.i][self.j]
@@ -127,7 +127,7 @@ class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution]
 
 
 @final
-class TwoOptMove(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[Solution]):
+class TwoOptMove(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[Solution, int]):
     def __init__(self, neighbourhood: TwoOptNeighbourhood, ix: int, jx: int):
         self.neighbourhood = neighbourhood
         # ix and jx are indices
@@ -145,7 +145,7 @@ class TwoOptMove(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[So
         solution.tour[ix:jx] = solution.tour[ix:jx][::-1]
         return solution
 
-    def objective_value_increment(self, solution: Solution) -> float:
+    def objective_value_increment(self, solution: Solution) -> int:
         prob = solution.problem
         n, ix, jx = prob.n, self.ix, self.jx
         # Tour length increment
@@ -326,10 +326,10 @@ if __name__ == "__main__":
     log.info(f"Objective value after constructive search: {solution.objective_value()}")
 
     # Run simulated annealing to improve the previous solution
-    solution = alg.sa(problem, solution, 10.0, 30.0)
+    # solution = alg.sa(problem, solution, 10.0, 30.0)
     # solution = alg.rls(problem, solution, 10.0)
     # solution = alg.best_improvement(problem, solution)
-    # solution = alg.first_improvement(problem, solution)
+    solution = alg.first_improvement(problem, solution)
     log.info(f"Objective value after local search: {solution.objective_value()}")
 
     # Print the final solution to stdout

@@ -5,8 +5,9 @@
 import random
 from collections.abc import Iterable
 from logging import getLogger
-from typing import Optional, Protocol, TypeVar, Union
+from typing import Optional, Protocol, TypeVar
 
+from ..values import Float
 from ..operations import (
     SupportsApplyMove,
     SupportsConstructionNeighbourhood,
@@ -17,11 +18,12 @@ from ..operations import (
 
 log = getLogger(__name__)
 
+_Increment = int | float | Float
 
 _TSolution = TypeVar("_TSolution")
 
 
-class _Move(SupportsApplyMove[_TSolution], SupportsLowerBoundIncrement[_TSolution], Protocol): ...
+class _Move(SupportsApplyMove[_TSolution], SupportsLowerBoundIncrement[_TSolution, _Increment], Protocol): ...
 
 
 class _Neighbourhood(SupportsMoves[_TSolution, _Move[_TSolution]], Protocol): ...
@@ -49,7 +51,7 @@ def greedy_construction(problem: _Problem[_TSolution], solution: Optional[_TSolu
         best_move, best_incr = move_and_incr
 
         for move, incr in move_iter:
-            if incr < best_incr:
+            if incr < best_incr:  # type: ignore
                 best_move = move
                 best_incr = incr
                 if incr == 0:
@@ -79,10 +81,10 @@ def greedy_construction_with_random_tie_breaking(
         best_incr = move_and_incr[1]
 
         for move, incr in move_iter:
-            if incr < best_incr:
+            if incr < best_incr:  # type: ignore # incr and best_incr should be the same type
                 best_moves = [move]
                 best_incr = incr
-            elif incr < best_incr + 1e-6:
+            elif incr == best_incr:
                 best_moves.append(move)
 
         log.info(f"Best increment: {best_incr}")
@@ -96,7 +98,7 @@ def greedy_construction_with_random_tie_breaking(
 
 def _valid_moves_and_increments(
     neigh: _Neighbourhood[_TSolution], solution: _TSolution
-) -> Iterable[tuple[_Move[_TSolution], Union[int, float]]]:
+) -> Iterable[tuple[_Move[_TSolution], _Increment]]:
     for move in neigh.moves(solution):
         incr = move.lower_bound_increment(solution)
         if incr is not None:

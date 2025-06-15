@@ -2,10 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, Protocol, TypeVar, Union
+from typing import Optional, Protocol, TypeVar
 
-Solution = TypeVar("Solution", contravariant=True)
+_TSolution_contra = TypeVar("_TSolution_contra", contravariant=True)
+_TIncrement_co = TypeVar("_TIncrement_co", covariant=True)
 
 
-class SupportsObjectiveValueIncrement(Protocol[Solution]):
-    def objective_value_increment(self, solution: Solution) -> Optional[Union[int, float]]: ...
+class SupportsObjectiveValueIncrement(Protocol[_TSolution_contra, _TIncrement_co]):
+    def objective_value_increment(self, solution: _TSolution_contra) -> Optional[_TIncrement_co]: ...

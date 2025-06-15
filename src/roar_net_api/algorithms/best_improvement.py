@@ -4,8 +4,9 @@
 
 from collections.abc import Iterable
 from logging import getLogger
-from typing import Protocol, TypeVar, Union
+from typing import Protocol, TypeVar
 
+from ..values import Float
 from ..operations import (
     SupportsApplyMove,
     SupportsLocalNeighbourhood,
@@ -15,11 +16,12 @@ from ..operations import (
 
 log = getLogger(__name__)
 
+_Increment = int | float | Float
 
 _TSolution = TypeVar("_TSolution")
 
 
-class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution], Protocol): ...
+class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution, _Increment], Protocol): ...
 
 
 class _Neighbourhood(SupportsMoves[_TSolution, _Move[_TSolution]], Protocol): ...
@@ -37,7 +39,7 @@ def best_improvement(problem: _Problem[_TSolution], solution: _TSolution) -> _TS
         best_move, best_incr = move_and_incr
 
         for move, incr in move_iter:
-            if incr < best_incr:
+            if incr < best_incr:  # type: ignore # incr and best_incr are the same type
                 best_move = move
                 best_incr = incr
 
@@ -53,7 +55,7 @@ def best_improvement(problem: _Problem[_TSolution], solution: _TSolution) -> _TS
 
 def _valid_moves_and_increments(
     neigh: _Neighbourhood[_TSolution], solution: _TSolution
-) -> Iterable[tuple[_Move[_TSolution], Union[int, float]]]:
+) -> Iterable[tuple[_Move[_TSolution], _Increment]]:
     for move in neigh.moves(solution):
         incr = move.objective_value_increment(solution)
         assert incr is not None

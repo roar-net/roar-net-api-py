@@ -7,8 +7,9 @@ from collections.abc import Callable
 from logging import getLogger
 from operator import itemgetter
 from time import perf_counter
-from typing import Optional, Protocol, TypeVar, Union, cast
+from typing import Optional, Protocol, TypeVar
 
+from ..values import Float
 from ..operations import (
     SupportsApplyMove,
     SupportsConstructionNeighbourhood,
@@ -21,14 +22,18 @@ from ..operations import (
 
 log = getLogger(__name__)
 
+_Value = int | float | Float
 
-class _Solution(SupportsObjectiveValue, SupportsCopySolution, Protocol): ...
+_Increment = int | float | Float
+
+
+class _Solution(SupportsObjectiveValue[_Value], SupportsCopySolution, Protocol): ...
 
 
 _TSolution = TypeVar("_TSolution", bound=_Solution)
 
 
-class _Move(SupportsLowerBoundIncrement[_TSolution], SupportsApplyMove[_TSolution], Protocol): ...
+class _Move(SupportsLowerBoundIncrement[_TSolution, _Increment], SupportsApplyMove[_TSolution], Protocol): ...
 
 
 class _Neighbourhood(SupportsMoves[_TSolution, _Move[_TSolution]], Protocol): ...
@@ -66,24 +71,25 @@ def grasp(
 
         cl = _valid_moves_and_increments(neigh, s)
         while len(cl) != 0:
-            cmin = min(cl, key=itemgetter(1))[1]
-            cmax = max(cl, key=itemgetter(1))[1]
+            cmin = float(min(cl, key=itemgetter(1))[1])
+            cmax = float(max(cl, key=itemgetter(1))[1])
             thresh = cmin + alpha * (cmax - cmin)
             rcl = [m for m, decr in cl if decr <= thresh]
             m = random.choice(rcl)
             m.apply_move(s)
             obj = s.objective_value()
-            if obj is not None and (bobj is None or obj < bobj):
+            if obj is not None and (bobj is None or obj < bobj):  # type: ignore # obj and bobj will have the same (comparable) type
                 b = s.copy_solution()
                 bobj = b.objective_value()
             cl = _valid_moves_and_increments(neigh, s)
-        if b is not None:
+        if bobj is not None:
+            assert b is not None
             if local_search is not None:
                 b = local_search(problem, b)
                 # The following assumes that local_search returns a better or equal objective value
-                bobj = cast(Union[int, float], b.objective_value())
-            bobj = cast(Union[int, float], bobj)
-            if bestobj is None or bobj < bestobj:
+                bobj = b.objective_value()
+                assert bobj is not None
+            if bestobj is None or bobj < bestobj:  # type: ignore # bobj and bestobj will have the same (comparable) type
                 log.info(f"Best solution: {bobj}")
                 best = b
                 bestobj = bobj
@@ -92,8 +98,8 @@ def grasp(
 
 def _valid_moves_and_increments(
     neigh: _Neighbourhood[_TSolution], solution: _TSolution
-) -> list[tuple[_Move[_TSolution], Union[int, float]]]:
-    res: list[tuple[_Move[_TSolution], Union[int, float]]] = []
+) -> list[tuple[_Move[_TSolution], _Increment]]:
+    res: list[tuple[_Move[_TSolution], _Increment]] = []
     for m in neigh.moves(solution):
         incr = m.lower_bound_increment(solution)
         if incr is not None:

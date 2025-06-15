@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, Protocol, Union
+from typing import Optional, Protocol, TypeVar
+
+_TValue_co = TypeVar("_TValue_co", covariant=True)
 
 
-class SupportsObjectiveValue(Protocol):
-    def objective_value(self) -> Optional[Union[int, float]]: ...
+class SupportsObjectiveValue(Protocol[_TValue_co]):
+    def objective_value(self) -> Optional[_TValue_co]: ...

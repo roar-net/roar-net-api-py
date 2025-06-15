@@ -2,6 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from . import algorithms, operations, types
+from . import algorithms, operations
 
-__all__ = ["algorithms", "operations", "types"]
+__all__ = ["algorithms", "operations"]

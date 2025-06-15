@@ -7,6 +7,7 @@ from .best_improvement import best_improvement
 from .first_improvement import first_improvement
 from .grasp import grasp
 from .greedy_construction import greedy_construction
+from .pls import pls
 from .rls import rls
 from .sa import sa
 
@@ -16,6 +17,7 @@ __all__ = [
     "first_improvement",
     "grasp",
     "greedy_construction",
+    "pls",
     "rls",
     "sa",
 ]
