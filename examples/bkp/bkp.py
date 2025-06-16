@@ -6,15 +6,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
 import random
 import sys
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
 from logging import getLogger
 from typing import Optional, Protocol, Self, TextIO, TypeVar, final
 
-from roar_net_api.values import Float
 from roar_net_api.operations import (
     SupportsApplyMove,
     SupportsConstructionNeighbourhood,
@@ -28,7 +27,9 @@ from roar_net_api.operations import (
     SupportsObjectiveValueIncrement,
     SupportsRandomMove,
     SupportsRandomMovesWithoutReplacement,
+    SupportsSubNeighbourhoods,
 )
+from roar_net_api.values import Float
 
 log = getLogger(__name__)
 
@@ -178,7 +179,7 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue[Float], SupportsLowe
         self.unused = unused
         self.used_set = used_set if used_set is not None else set(map(lambda item: item.ord, self.used))
         self.value = value if value is not None else sum(map(lambda i: i.value, self.used))
-        self.cap = cap if cap is not None else self.problem.capacity - sum(map(lambda i: i.weight, self.used))
+        self.cap: float = cap if cap is not None else self.problem.capacity - sum(map(lambda i: i.weight, self.used))
         self._lb = lb
 
     @property
@@ -348,6 +349,7 @@ class LocalNeighbourhood(
     SupportsMoves[Solution, AddMove | SwapMove],
     SupportsRandomMovesWithoutReplacement[Solution, AddMove | SwapMove],
     SupportsRandomMove[Solution, AddMove | SwapMove],
+    SupportsSubNeighbourhoods[tuple[AddNeighbourhood, SwapNeighbourhood]],
 ):
     def moves(self, solution: Solution) -> Iterable[AddMove | SwapMove]:
         for ix, i in enumerate(solution.unused):
@@ -378,6 +380,9 @@ class LocalNeighbourhood(
 
     def random_move(self, solution: Solution) -> Optional[AddMove | SwapMove]:
         return next(iter(self.random_moves_without_replacement(solution)), None)
+
+    def sub_neighbourhoods(self) -> tuple[AddNeighbourhood, SwapNeighbourhood]:
+        return (AddNeighbourhood(), SwapNeighbourhood())
 
 
 # ---------------------------------- Problem --------------------------------
@@ -446,6 +451,7 @@ if __name__ == "__main__":
     problem = Problem.from_textio(sys.stdin)
 
     # Run greedy construction to get an initial solution
+    # solution = problem.empty_solution()
     solution = alg.greedy_construction(problem)
     # solution = alg.beam_search(problem, bw=10)
     # solution = alg.grasp(problem, 30.0)
@@ -456,6 +462,7 @@ if __name__ == "__main__":
     # solution = alg.rls(problem, solution, 10.0)
     # solution = alg.best_improvement(problem, solution)
     # solution = alg.first_improvement(problem, solution)
+    # solution = alg.vns_fi(problem, solution)
     log.info(f"Objective value after local search: {solution.objective_value()}")
 
     # Print the final solution to stdout

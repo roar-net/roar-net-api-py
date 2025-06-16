@@ -16,6 +16,8 @@ from typing import Optional, Protocol, Self, TextIO, TypeVar, final
 
 from roar_net_api.operations import (
     SupportsApplyMove,
+    SupportsApplyMoveLeftEnd,
+    SupportsApplyMoveRightEnd,
     SupportsConstructionNeighbourhood,
     SupportsCopySolution,
     SupportsEmptySolution,
@@ -26,13 +28,11 @@ from roar_net_api.operations import (
     SupportsObjectiveValue,
     SupportsObjectiveValueIncrement,
     SupportsRandomMove,
+    SupportsRandomMovesRightEndFartherWithoutReplacement,
     SupportsRandomMovesWithoutReplacement,
     SupportsRandomSolution,
-    SupportsSegmentLength,
-    SupportsApplyMoveLeftEnd,
-    SupportsApplyMoveRightEnd,
     SupportsSegment,
-    SupportsRandomMovesRightEndFartherWithoutReplacement,
+    SupportsSegmentLength,
 )
 
 log = getLogger(__name__)

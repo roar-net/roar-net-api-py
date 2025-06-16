@@ -9,7 +9,6 @@ from operator import itemgetter
 from time import perf_counter
 from typing import Optional, Protocol, TypeVar
 
-from ..values import Float
 from ..operations import (
     SupportsApplyMove,
     SupportsConstructionNeighbourhood,
@@ -19,6 +18,7 @@ from ..operations import (
     SupportsMoves,
     SupportsObjectiveValue,
 )
+from ..values import Float
 
 log = getLogger(__name__)
 
@@ -76,7 +76,7 @@ def grasp(
             thresh = cmin + alpha * (cmax - cmin)
             rcl = [m for m, decr in cl if decr <= thresh]
             m = random.choice(rcl)
-            m.apply_move(s)
+            s = m.apply_move(s)
             obj = s.objective_value()
             if obj is not None and (bobj is None or obj < bobj):  # type: ignore # obj and bobj will have the same (comparable) type
                 b = s.copy_solution()

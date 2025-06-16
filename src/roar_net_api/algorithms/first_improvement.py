@@ -6,13 +6,13 @@ from collections.abc import Iterable
 from logging import getLogger
 from typing import Protocol, TypeVar
 
-from ..values import Float
 from ..operations import (
     SupportsApplyMove,
     SupportsLocalNeighbourhood,
     SupportsObjectiveValueIncrement,
     SupportsRandomMovesWithoutReplacement,
 )
+from ..values import Float
 
 log = getLogger(__name__)
 
@@ -40,7 +40,7 @@ def first_improvement(problem: _Problem[_TSolution], solution: _TSolution) -> _T
 
         if increment < 0:
             log.info(f"Found increment: {increment}")
-            move.apply_move(solution)
+            solution = move.apply_move(solution)
             move_iter = iter(_valid_moves_and_increments(neigh, solution))
 
         move_and_incr = next(move_iter, None)

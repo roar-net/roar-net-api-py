@@ -8,7 +8,6 @@ from math import exp
 from time import perf_counter
 from typing import Callable, Optional, Protocol, TypeVar
 
-from ..values import Float
 from ..operations import (
     SupportsApplyMove,
     SupportsCopySolution,
@@ -17,6 +16,7 @@ from ..operations import (
     SupportsObjectiveValueIncrement,
     SupportsRandomMovesWithoutReplacement,
 )
+from ..values import Float
 
 log = getLogger(__name__)
 
@@ -89,7 +89,7 @@ def sa(
             assert incr is not None
 
             if acceptance(incr, t) >= random.random():
-                move.apply_move(solution)
+                solution = move.apply_move(solution)
                 obj = solution.objective_value()
                 assert obj is not None
 

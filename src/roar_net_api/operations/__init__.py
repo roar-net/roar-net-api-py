@@ -10,21 +10,22 @@ from .empty_solution import SupportsEmptySolution
 from .heuristic_solution import SupportsHeuristicSolution
 from .invert_move import SupportsInvertMove
 from .local_neighbourhood import SupportsLocalNeighbourhood
-from .lower_bound_increment import SupportsLowerBoundIncrement
 from .lower_bound import SupportsLowerBound
+from .lower_bound_increment import SupportsLowerBoundIncrement
 from .moves import SupportsMoves
-from .objective_value_increment import SupportsObjectiveValueIncrement
 from .objective_value import SupportsObjectiveValue
+from .objective_value_increment import SupportsObjectiveValueIncrement
 from .random_move import SupportsRandomMove
 from .random_moves_without_replacement import SupportsRandomMovesWithoutReplacement
 from .random_solution import SupportsRandomSolution
 from .segments import (
-    SupportsSegmentLength,
     SupportsApplyMoveLeftEnd,
     SupportsApplyMoveRightEnd,
-    SupportsSegment,
     SupportsRandomMovesRightEndFartherWithoutReplacement,
+    SupportsSegment,
+    SupportsSegmentLength,
 )
+from .sub_neighbourhoods import SupportsSubNeighbourhoods
 
 __all__ = [
     "SupportsApplyMove",
@@ -48,4 +49,5 @@ __all__ = [
     "SupportsApplyMoveRightEnd",
     "SupportsSegment",
     "SupportsRandomMovesRightEndFartherWithoutReplacement",
+    "SupportsSubNeighbourhoods",
 ]

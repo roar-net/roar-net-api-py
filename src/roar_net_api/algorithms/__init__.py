@@ -11,6 +11,7 @@ from .pls import pls
 from .rls import rls
 from .sa import sa
 from .tabu_search import tabu_search
+from .vns_fi import vns_fi
 
 __all__ = [
     "beam_search",
@@ -22,4 +23,5 @@ __all__ = [
     "rls",
     "sa",
     "tabu_search",
+    "vns_fi",
 ]
