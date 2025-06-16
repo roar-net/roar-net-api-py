@@ -68,11 +68,20 @@ To use this library add it to your project. For example, to add it to
 a `uv` project you can do:
 
 ```bash
-uv add roar-net-api
+uv add git+https://github.com/roar-net/roar-net-api-py --branch training-school
 ```
 
-Alternatively, you can add it to a `requirements.txt` file or install
-it with `pip` manually.
+Alternatively you can add it to a `requirements.txt` file:
+
+```text
+roar-net-api @ git+https://github.com/roar-net/roar-net-api-py.git@training-school
+```
+
+Or install it directly with `pip`:
+
+```bash
+pip install "git+https://github.com/roar-net/roar-net-api-py.git@training-school"
+```
 
 ### Implement a model
 
