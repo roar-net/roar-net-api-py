@@ -10,6 +10,7 @@ from .greedy_construction import greedy_construction
 from .pls import pls
 from .rls import rls
 from .sa import sa
+from .tabu_search import tabu_search
 
 __all__ = [
     "beam_search",
@@ -20,4 +21,5 @@ __all__ = [
     "pls",
     "rls",
     "sa",
+    "tabu_search",
 ]

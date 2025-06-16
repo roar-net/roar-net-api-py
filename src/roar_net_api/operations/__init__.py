@@ -18,6 +18,13 @@ from .objective_value import SupportsObjectiveValue
 from .random_move import SupportsRandomMove
 from .random_moves_without_replacement import SupportsRandomMovesWithoutReplacement
 from .random_solution import SupportsRandomSolution
+from .segments import (
+    SupportsSegmentLength,
+    SupportsApplyMoveLeftEnd,
+    SupportsApplyMoveRightEnd,
+    SupportsSegment,
+    SupportsRandomMovesRightEndFartherWithoutReplacement,
+)
 
 __all__ = [
     "SupportsApplyMove",
@@ -36,4 +43,9 @@ __all__ = [
     "SupportsRandomMove",
     "SupportsRandomMovesWithoutReplacement",
     "SupportsRandomSolution",
+    "SupportsSegmentLength",
+    "SupportsApplyMoveLeftEnd",
+    "SupportsApplyMoveRightEnd",
+    "SupportsSegment",
+    "SupportsRandomMovesRightEndFartherWithoutReplacement",
 ]

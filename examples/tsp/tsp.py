@@ -28,6 +28,11 @@ from roar_net_api.operations import (
     SupportsRandomMove,
     SupportsRandomMovesWithoutReplacement,
     SupportsRandomSolution,
+    SupportsSegmentLength,
+    SupportsApplyMoveLeftEnd,
+    SupportsApplyMoveRightEnd,
+    SupportsSegment,
+    SupportsRandomMovesRightEndFartherWithoutReplacement,
 )
 
 log = getLogger(__name__)
@@ -127,7 +132,12 @@ class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution,
 
 
 @final
-class TwoOptMove(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[Solution, int]):
+class TwoOptMove(
+    SupportsApplyMove[Solution],
+    SupportsObjectiveValueIncrement[Solution, int],
+    SupportsApplyMoveLeftEnd["BreakpointSegment"],
+    SupportsApplyMoveRightEnd["BreakpointSegment"],
+):
     def __init__(self, neighbourhood: TwoOptNeighbourhood, ix: int, jx: int):
         self.neighbourhood = neighbourhood
         # ix and jx are indices
@@ -154,6 +164,54 @@ class TwoOptMove(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[So
         incr -= prob.dist[t[ix - 1]][t[ix]] + prob.dist[t[jx - 1]][t[jx % n]]
         return incr
 
+    def apply_move_left_end(self, segment: BreakpointSegment) -> BreakpointSegment:
+        prob = segment.neighbourhood.problem
+        n, ix, jx = prob.n, self.ix, self.jx
+        # Update segment
+        t0 = segment.t0
+        t1 = segment.t1
+        t0[ix:jx] = t0[ix:jx][::-1]
+        # FIXME: Can tt and the length be updated more efficiently?
+        t0i = n * [-1]
+        for i in range(n):
+            t0i[t0[i]] = i
+        assert all(map(lambda x: x != -1, t0i))
+        # Transformed permutation
+        tt = segment.tt = [t0i[t1[i]] for i in range(n)]
+        segment.length = sum((1 < abs(tt[i] - tt[i - 1]) < n - 1) for i in range(n))
+        return segment
+
+    def apply_move_right_end(self, segment: BreakpointSegment) -> BreakpointSegment:
+        prob = segment.neighbourhood.problem
+        n, ix, jx = prob.n, self.ix, self.jx
+        # Update segment
+        t1 = segment.t1
+        tt = segment.tt
+        t1[ix:jx] = t1[ix:jx][::-1]
+        segment.length -= (1 < abs(tt[ix] - tt[ix - 1]) < n - 1) + (1 < abs(tt[jx % n] - tt[jx - 1]) < n - 1)
+        tt[ix:jx] = tt[ix:jx][::-1]
+        segment.length += (1 < abs(tt[ix] - tt[ix - 1]) < n - 1) + (1 < abs(tt[jx % n] - tt[jx - 1]) < n - 1)
+        return segment
+
+
+# -------------------------------- Segment -----------------------------------
+
+
+@final
+class BreakpointSegment(SupportsSegmentLength):
+    def __init__(self, neighbourhood: TwoOptNeighbourhood, t0: list[int], t1: list[int], tt: list[int], length: int):
+        self.neighbourhood = neighbourhood
+        self.t0 = t0  # Left end tour
+        self.t1 = t1  # Right end tour
+        self.tt = tt  # Transformed tour to make breakpoint detection simpler
+        self.length = length
+
+    def segment_length(self) -> int:
+        assert self.length == sum(
+            (1 < abs(self.tt[i] - self.tt[i - 1]) < len(self.tt) - 1) for i in range(len(self.tt))
+        )
+        return self.length
+
 
 # ------------------------------- Neighbourhood ------------------------------
 
@@ -175,6 +233,8 @@ class TwoOptNeighbourhood(
     SupportsMoves[Solution, TwoOptMove],
     SupportsRandomMovesWithoutReplacement[Solution, TwoOptMove],
     SupportsRandomMove[Solution, TwoOptMove],
+    SupportsSegment[Solution, BreakpointSegment],
+    SupportsRandomMovesRightEndFartherWithoutReplacement[BreakpointSegment, TwoOptMove],
 ):
     def __init__(self, problem: Problem):
         self.problem = problem
@@ -228,6 +288,85 @@ class TwoOptNeighbourhood(
 
     def random_move(self, solution: Solution) -> Optional[TwoOptMove]:
         return next(iter(self.random_moves_without_replacement(solution)), None)
+
+    def segment(self, solution0: Solution, solution1: Solution) -> Optional[BreakpointSegment]:
+        assert self.problem == solution0.problem == solution1.problem
+        t0 = solution0.tour
+        t1 = solution1.tour
+        n = self.problem.n
+        if n == len(t0) and n == len(t1):  # Both solutions are feasible
+            # Inverse permutation of t0
+            t0i = n * [-1]
+            for i in range(n):
+                t0i[t0[i]] = i
+            assert all(map(lambda x: x != -1, t0i))
+            # Transformed permutation
+            tt = [t0i[t1[i]] for i in range(n)]
+            length = sum((1 < abs(tt[i] - tt[i - 1]) < n - 1) for i in range(n))
+            return BreakpointSegment(self, t0.copy(), t1.copy(), tt, length)
+        return None
+
+    def moves_right_end_closer(self, segment: BreakpointSegment) -> Iterable[TwoOptMove]:
+        tt = segment.tt
+        n = self.problem.n
+        # FIXME: Brute force approach, may be very inefficient
+        # FIXME: There may be no 2-opt moves that decrease the breakpoint
+        #        distance even if it is not 0
+        for ix in range(1, n - 1):
+            for jx in range(ix + 2, n + (ix != 1)):
+                if (1 < abs(tt[jx - 1] - tt[ix - 1]) < n - 1) + (1 < abs(tt[jx % n] - tt[ix]) < n - 1) < (
+                    1 < abs(tt[ix] - tt[ix - 1]) < n - 1
+                ) + (1 < abs(tt[jx % n] - tt[jx - 1]) < n - 1):
+                    yield TwoOptMove(self, ix, jx)
+
+    def moves_right_end_farther(self, segment: BreakpointSegment) -> Iterable[TwoOptMove]:
+        tt = segment.tt
+        n = self.problem.n
+        for ix in range(1, n - 1):
+            for jx in range(ix + 2, n + (ix != 1)):
+                if (1 < abs(tt[jx - 1] - tt[ix - 1]) < n - 1) + (1 < abs(tt[jx % n] - tt[ix]) < n - 1) > (
+                    1 < abs(tt[ix] - tt[ix - 1]) < n - 1
+                ) + (1 < abs(tt[jx % n] - tt[jx - 1]) < n - 1):
+                    yield TwoOptMove(self, ix, jx)
+
+    def random_moves_right_end_closer_without_replacement(self, segment: BreakpointSegment) -> Iterable[TwoOptMove]:
+        tt = segment.tt
+        n = self.problem.n
+        # FIXME: Brute force approach, may be very inefficient
+        # FIXME: There may be no 2-opt moves that decrease the breakpoint
+        #        distance even if it is not 0
+        for x in sparse_fisher_yates_iter(n * (n - 3) // 2):
+            jx = (1 + math.isqrt(1 + 8 * x)) // 2
+            ix = x - jx * (jx - 1) // 2 + 1
+            jx += 2
+            # Handle special case
+            if ix == 1 and jx == n:
+                ix = n - 2
+            if (1 < abs(tt[jx - 1] - tt[ix - 1]) < n - 1) + (1 < abs(tt[jx % n] - tt[ix]) < n - 1) < (
+                1 < abs(tt[ix] - tt[ix - 1]) < n - 1
+            ) + (1 < abs(tt[jx % n] - tt[jx - 1]) < n - 1):
+                yield TwoOptMove(self, ix, jx)
+
+    def random_moves_right_end_farther_without_replacement(self, segment: BreakpointSegment) -> Iterable[TwoOptMove]:
+        tt = segment.tt
+        n = self.problem.n
+        for x in sparse_fisher_yates_iter(n * (n - 3) // 2):
+            jx = (1 + math.isqrt(1 + 8 * x)) // 2
+            ix = x - jx * (jx - 1) // 2 + 1
+            jx += 2
+            # Handle special case
+            if ix == 1 and jx == n:
+                ix = n - 2
+            if (1 < abs(tt[jx - 1] - tt[ix - 1]) < n - 1) + (1 < abs(tt[jx % n] - tt[ix]) < n - 1) > (
+                1 < abs(tt[ix] - tt[ix - 1]) < n - 1
+            ) + (1 < abs(tt[jx % n] - tt[jx - 1]) < n - 1):
+                yield TwoOptMove(self, ix, jx)
+
+    def random_move_right_end_closer(self, segment: BreakpointSegment) -> Optional[TwoOptMove]:
+        return next(iter(self.random_moves_right_end_closer_without_replacement(segment)), None)
+
+    def random_move_right_end_farther(self, segment: BreakpointSegment) -> Optional[TwoOptMove]:
+        return next(iter(self.random_moves_right_end_farther_without_replacement(segment)), None)
 
 
 # ---------------------------------- Problem --------------------------------
@@ -329,7 +468,8 @@ if __name__ == "__main__":
     # solution = alg.sa(problem, solution, 10.0, 30.0)
     # solution = alg.rls(problem, solution, 10.0)
     # solution = alg.best_improvement(problem, solution)
-    solution = alg.first_improvement(problem, solution)
+    # solution = alg.first_improvement(problem, solution)
+    solution = alg.tabu_search(problem, solution, 10.0, 200)  # type: ignore # FIXME: currently typing not working
     log.info(f"Objective value after local search: {solution.objective_value()}")
 
     # Print the final solution to stdout
