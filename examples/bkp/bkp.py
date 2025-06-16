@@ -318,6 +318,9 @@ class AddNeighbourhood(
         return next(iter(self.random_moves_without_replacement(solution)), None)
 
 
+# FIXME: Implement remove neighbourhood
+
+
 @final
 class SwapNeighbourhood(
     SupportsMoves[Solution, SwapMove],
