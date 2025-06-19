@@ -43,7 +43,7 @@ def best_improvement(problem: _Problem[_TSolution], solution: _TSolution) -> _TS
 
         log.info(f"Best increment: {best_incr}")
 
-        best_move.apply_move(solution)
+        solution = best_move.apply_move(solution)
 
         move_iter = iter(_valid_moves_and_increments(neigh, solution))
         move_and_incr = next(move_iter, None)
