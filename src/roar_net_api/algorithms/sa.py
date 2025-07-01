@@ -80,7 +80,7 @@ def sa(
             assert incr is not None
 
             if acceptance(incr, t) >= random.random():
-                move.apply_move(solution)
+                solution = move.apply_move(solution)
                 obj = solution.objective_value()
                 assert obj is not None
 

@@ -55,7 +55,7 @@ def greedy_construction(problem: _Problem[_TSolution], solution: Optional[_TSolu
                 if incr == 0:
                     break
 
-        best_move.apply_move(solution)
+        solution = best_move.apply_move(solution)
 
         move_iter = iter(_valid_moves_and_increments(neigh, solution))
         move_and_incr = next(move_iter, None)
@@ -86,7 +86,7 @@ def greedy_construction_with_random_tie_breaking(
                 best_moves.append(move)
 
         log.info(f"Best increment: {best_incr}")
-        random.choice(best_moves).apply_move(solution)
+        solution = random.choice(best_moves).apply_move(solution)
 
         move_iter = iter(_valid_moves_and_increments(neigh, solution))
         move_and_incr = next(move_iter, None)
