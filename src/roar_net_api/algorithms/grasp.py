@@ -71,7 +71,7 @@ def grasp(
             thresh = cmin + alpha * (cmax - cmin)
             rcl = [m for m, decr in cl if decr <= thresh]
             m = random.choice(rcl)
-            m.apply_move(s)
+            s = m.apply_move(s)
             obj = s.objective_value()
             if obj is not None and (bobj is None or obj < bobj):
                 b = s.copy_solution()
