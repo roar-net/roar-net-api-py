@@ -1,0 +1,42 @@
+{
+    "name": "Teaching Assistant Assignment Problem Example",
+    "sessionOccurrences": [
+        "SO_A",
+        "SO_B",
+        "SO_C"
+    ],
+    "tas": [
+        {
+            "name": "TA_X",
+            "qualifications": {
+                "SO_C" : 2
+            }
+        },
+        {
+            "name": "TA_A",
+            "qualifications": {
+                "SO_A" : 1,
+                "SO_B" : 2
+            }
+        },
+        {
+            "name": "TA_B",
+            "qualifications": {
+                "SO_A" : 2,
+                "SO_B" : 1
+            }
+        },
+        {
+            "name": "TA_C",
+            "qualifications": {
+            }
+        },
+        {
+            "name": "TA_D",
+            "qualifications": {
+                "SO_A" : 1,
+                "SO_B" : 1
+            }
+        }
+    ]
+}
