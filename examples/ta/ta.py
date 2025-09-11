@@ -129,6 +129,48 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
             f.write(so.name + " -> " + " ".join(str(ta.name) + " " for ta in self.mapping[so]) + "\n")
         f.write("EOF\n")
 
+    def to_json(self, f: TextIO) -> None:
+        assert f is not None
+        data = {"name": self.problem.name}
+
+        # session occurrences
+        session_occurrences = []
+        for so in self.problem.session_occurrences:
+            so_dict = {}
+            so_dict["name"] = so.name
+            so_dict["date_start"] = so.date_start
+            so_dict["date_end"] = so.date_end
+            so_dict["number_of_tas"] = so.number_of_tas
+            so_dict["hours_paid_per_occurrence"] = so.hours_paid_per_occurrence
+            so_dict["week"] = so.week
+            session_occurrences.append(so_dict)
+        data["sessionOccurrences"] = session_occurrences
+
+        # TAs
+        tas = []
+        for ta in self.problem.tas:
+            ta_dict = {}
+            ta_dict["name"] = ta.name
+            qualifications = {}
+            for q in ta.qualifications:
+                qualifications[q.name] = -1 * ta.qualifications[q]
+            ta_dict["qualifications"] = qualifications
+            ta_dict["max_hours_per_week"] = ta.max_hours_per_week
+            ta_dict["max_hours_per_year"] = ta.max_hours_per_year
+            tas.append(ta_dict)
+        data["tas"] = tas
+
+        # Mappings
+        mappings = {}
+        for so in self.mapping.keys():
+            mappings[so.name] = []
+            for ta in self.mapping[so]:
+                mappings[so.name].append(ta.name)
+        data["mappings"] = mappings
+
+        j = json.dumps(data, indent=4)
+        f.write(j)
+
     def copy_solution(self) -> Self:
         return self.__class__(self.problem, self.mapping.copy(), self.unused_tas.copy(),
                               self.unused_session_occurrences.copy(), self.lb)
@@ -369,3 +411,7 @@ if __name__ == "__main__":
     # Print the final solution to stdout
     log.info("Final solution:")
     solution.to_textio(sys.stdout)
+
+    # Export the final solution as JSON file
+    with open("./ta_solution.json", "w") as f:
+        solution.to_json(f)
