@@ -4,6 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import datetime
 from dateutil import parser
 
 from ta import Solution
@@ -149,3 +150,35 @@ def is_ta_qualified_for_so(ta: TeachingAssistant, so: SessionOccurrence) -> bool
     assert ta is not None
     assert so is not None
     return so in ta.qualifications and ta.qualifications[so] < 0
+
+def is_date_blocked(candidate: str, date: str) -> bool:
+    """
+    Returns True if the two given dates (candidate and date) overlap in year, month, and day.
+    """
+    assert candidate is not None
+    assert date is not None
+
+    # Remove trailing minutes, seconds, etc.
+    candidate = candidate.split()[0]
+    date = date.split()[0]
+
+    candidate_date = datetime.datetime.strptime(candidate, "%Y-%m-%d").date()
+    date_date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    if candidate_date.day == date_date.day and candidate_date.month == date_date.month and candidate_date.year == date_date.year:
+        return True
+
+    return False
+
+def is_ta_bocked_in_so(ta: TeachingAssistant, so: SessionOccurrence) -> bool:
+    """
+    Returns True if the given TA is not blocked on the date of the given session occurrence.
+    """
+    assert ta is not None
+    assert so is not None
+
+    for blocked_date in ta.blocked_dates:
+        if is_date_blocked(blocked_date, so.date_start):
+            return True
+        if is_date_blocked(blocked_date, so.date_end):
+            return True
+    return False

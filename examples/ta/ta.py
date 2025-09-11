@@ -117,6 +117,12 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
             if ta_utils.check_occurrences_for_conflicts(found_session_occurrences):
                 return False
 
+            # Check blocked dates
+            for so in self.mapping.keys():
+                if ta in self.mapping[so]:
+                    if ta_utils.is_ta_bocked_in_so(ta, so):
+                        return False
+
         # If no violation was found, everything is fine and the solution is valid/feasible
         return True
 
@@ -157,6 +163,7 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
             ta_dict["qualifications"] = qualifications
             ta_dict["max_hours_per_week"] = ta.max_hours_per_week
             ta_dict["max_hours_per_year"] = ta.max_hours_per_year
+            ta_dict["blocked_dates"] = ta.blocked_dates
             tas.append(ta_dict)
         data["tas"] = tas
 
@@ -195,6 +202,8 @@ class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution]
         assert ta is not None
         # It is only allowed to add TAs with a qualification for the respective session occurrence
         assert ta_utils.is_ta_qualified_for_so(ta, so)
+        # It is only allowed to add TAs when they do not have the date blocked
+        assert not ta_utils.is_ta_bocked_in_so(ta, so)
         self.neighbourhood = neighbourhood
         self.so = so
         self.ta = ta
@@ -223,6 +232,8 @@ class NewTaMove(SupportsApplyMove[Solution], SupportsObjectiveValueIncrement[Sol
         assert new_ta is not None
         # The new TA must have at least some qualification for the session occurrence
         assert ta_utils.is_ta_qualified_for_so(new_ta, so)
+        # It is only allowed to add TAs when they do not have the date blocked
+        assert not ta_utils.is_ta_bocked_in_so(new_ta, so)
         self.neighbourhood = neighbourhood
         self.so = so
         self.new_ta = new_ta
@@ -265,7 +276,8 @@ class AddNeighbourhood(SupportsMoves[Solution, AddMove]):
         for so in solution.unused_session_occurrences:
             for ta in solution.unused_tas:
                 if ta_utils.is_ta_qualified_for_so(ta, so):
-                    yield AddMove(self, so, ta)
+                    if not ta_utils.is_ta_bocked_in_so(ta, so):
+                        yield AddMove(self, so, ta)
 
 
 # Note: the ROAR-NET API glossary states that all *local* neighbourhoods must be feasible.
@@ -288,7 +300,8 @@ class NewTaNeighbourhood(
         for so in self.problem.session_occurrences:
             for ta in self.problem.tas:
                 if ta_utils.is_ta_assignable_to_so(solution, ta, so):
-                    yield NewTaMove(self, so, ta)
+                    if not ta_utils.is_ta_bocked_in_so(ta, so):
+                        yield NewTaMove(self, so, ta)
 
     def random_moves_without_replacement(self, solution: Solution) -> Iterable[NewTaMove]:
         assert self.problem == solution.problem
@@ -300,7 +313,9 @@ class NewTaNeighbourhood(
             for ta in all_tas:
                 # The TA must be assignable
                 if ta_utils.is_ta_assignable_to_so(solution, ta, so):
-                    yield NewTaMove(self, so, ta)
+                    # The TA must not be blocked at the session occurrence's date
+                    if not ta_utils.is_ta_bocked_in_so(ta, so):
+                        yield NewTaMove(self, so, ta)
 
     def random_move(self, solution: Solution) -> Optional[NewTaMove]:
         return next(iter(self.random_moves_without_replacement(solution)), None)
@@ -372,8 +387,12 @@ class Problem(
                 # Fill all other (non-)qualifications up with '0'
                 for q in leftover_session_occurrences.values():
                     qualifications[q] = 0
+                blocked_dates = []
+                if "blocked_dates" in ta:
+                    for blocked_date in ta["blocked_dates"]:
+                        blocked_dates.append(blocked_date)
                 new_ta = TeachingAssistant(ta["name"], qualifications, ta["max_hours_per_week"],
-                                           ta["max_hours_per_year"])
+                                           ta["max_hours_per_year"], blocked_dates)
                 imported_tas.append(new_ta)
 
             return cls(list(imported_session_occurrences.values()), imported_tas, imported["name"])

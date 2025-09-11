@@ -37,16 +37,18 @@ class TeachingAssistant:
     """
 
     def __init__(self, name: str, qualifications: dict[SessionOccurrence, int], max_hours_per_week: int,
-                 max_hours_per_year: int):
+                 max_hours_per_year: int, blocked_dates: list[str]):
         assert name is not None
         assert qualifications is not None
         assert max_hours_per_week is not None and max_hours_per_week >= 0
         assert max_hours_per_year is not None and max_hours_per_year >= 0
+        assert blocked_dates is not None
 
         self.name = name
         self.qualifications = qualifications
         self.max_hours_per_week = max_hours_per_week
         self.max_hours_per_year = max_hours_per_year
+        self.blocked_dates = blocked_dates
 
     def __repr__(self):
         # return "Teaching Assistant: ".join(self.name) #+ ": qualifications: ".join(self.qualifications)

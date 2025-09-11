@@ -44,7 +44,8 @@
                 "SO_B": 0
             },
             "max_hours_per_week": 10,
-            "max_hours_per_year": 312
+            "max_hours_per_year": 312,
+            "blocked_dates": []
         },
         {
             "name": "TA_A",
@@ -55,7 +56,8 @@
                 "SO_D": 0
             },
             "max_hours_per_week": 10,
-            "max_hours_per_year": 312
+            "max_hours_per_year": 312,
+            "blocked_dates": []
         },
         {
             "name": "TA_B",
@@ -66,7 +68,10 @@
                 "SO_D": 0
             },
             "max_hours_per_week": 10,
-            "max_hours_per_year": 312
+            "max_hours_per_year": 312,
+            "blocked_dates": [
+                "2025-09-10"
+            ]
         },
         {
             "name": "TA_C",
@@ -77,7 +82,8 @@
                 "SO_D": 0
             },
             "max_hours_per_week": 10,
-            "max_hours_per_year": 312
+            "max_hours_per_year": 312,
+            "blocked_dates": []
         },
         {
             "name": "TA_D",
@@ -88,7 +94,8 @@
                 "SO_D": 0
             },
             "max_hours_per_week": 10,
-            "max_hours_per_year": 312
+            "max_hours_per_year": 312,
+            "blocked_dates": []
         },
         {
             "name": "TA_E",
@@ -99,18 +106,19 @@
                 "SO_C": 0
             },
             "max_hours_per_week": 10,
-            "max_hours_per_year": 312
+            "max_hours_per_year": 312,
+            "blocked_dates": []
         }
     ],
     "mappings": {
-        "SO_A": [
-            "TA_B"
-        ],
         "SO_B": [
             "TA_A"
         ],
         "SO_C": [
             "TA_X"
+        ],
+        "SO_A": [
+            "TA_D"
         ],
         "SO_D": [
             "TA_E"
