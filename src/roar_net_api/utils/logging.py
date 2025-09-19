@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any, Optional, Union, Type
+from typing import Any, Callable, Optional, Union, Type
 import csv
 
 from roar_net_api.types import (
@@ -25,44 +25,14 @@ class ListLogger(logging.Handler):
             self.records.append(self.format(record))
 
 
-def get_logged_problem(
-    problem_cls: Type[Problem[Any, Any, Solution]], sol_cls: Type[Solution]
-) -> Type[Problem[Any, Any, Solution]]:
-    def objective_value(self: Any) -> Optional[int]:
-        val = sol_cls.objective_value(self)
-        if val is not None:
-            global perflog
-            perflog.log(level=5, msg=f"{val}")
-            return int(val)
-        return None
+def logged(func: Callable) -> Callable:
+    def wrapper(*args, **kwargs) -> Optional[int]:
+        result = func(*args, **kwargs)
+        if result is not None:
+            logging.getLogger("PerformanceLogger").log(5, f"{result}")
+        return result
 
-    LoggedSolution = type(
-        "LoggedSolution",
-        (sol_cls,),
-        {
-            "objective_value": objective_value,
-        },
-    )
-
-    # Dynamically create LoggedProblem using type()
-    def empty_solution(self: Any) -> Solution:
-        sol = problem_cls.empty_solution(self)
-        return LoggedSolution(*sol.__dict__.values())
-
-    def random_solution(self: Any) -> Solution:
-        sol = problem_cls.random_solution(self)
-        return LoggedSolution(*sol.__dict__.values())
-
-    LoggedProblem = type(
-        "LoggedProblem",
-        (problem_cls,),
-        {
-            "empty_solution": empty_solution,
-            "random_solution": random_solution,
-        },
-    )
-
-    return LoggedProblem
+    return wrapper
 
 
 class PerformanceLogger:

@@ -30,7 +30,7 @@ from roar_net_api.operations import (
     SupportsRandomSolution,
 )
 
-from roar_net_api.utils.logging import get_logged_problem, PerformanceLogger
+from roar_net_api.utils.logging import logged, PerformanceLogger
 
 log = logging.getLogger(__name__)
 
@@ -83,6 +83,7 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
     def copy_solution(self) -> Self:
         return self.__class__(self.problem, self.tour.copy(), self.not_visited.copy(), self.lb)
 
+    @logged
     def objective_value(self) -> Optional[int]:
         if self.is_feasible:
             return self.lb
@@ -322,13 +323,12 @@ if __name__ == "__main__":
     handler.setFormatter(logging.Formatter("%(levelname)s;%(asctime)s;%(message)s"))
     log.addHandler(handler)
 
-    LoggedProblem = get_logged_problem(Problem, Solution)
     perflogger = PerformanceLogger("log_test.csv")
     for instance in glob("*.tsp", root_dir="instances"):
-        problem = LoggedProblem.from_textio(open(f"instances/{instance}"))
+        problem = Problem.from_textio(open(f"instances/{instance}"))
         log.info(f"Read problem {problem.name} of size {problem.n}")
         perflogger.add_attribute("problem", problem.name)
-        perflogger.add_attribute("n", problem.n)
+        perflogger.add_attribute("n", f"{problem.n}")
 
         log.info("Starting SA runs")
         perflogger.add_attribute("algorithm", "SA")
