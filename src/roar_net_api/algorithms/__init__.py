@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from .bb import bb
 from .beam_search import beam_search
 from .best_improvement import best_improvement
 from .first_improvement import first_improvement
@@ -11,6 +12,7 @@ from .rls import rls
 from .sa import sa
 
 __all__ = [
+    "bb",
     "beam_search",
     "best_improvement",
     "first_improvement",

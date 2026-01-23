@@ -28,6 +28,7 @@ from roar_net_api.operations import (
     SupportsRandomMove,
     SupportsRandomMovesWithoutReplacement,
     SupportsRandomSolution,
+    SupportsRevertMove,
 )
 
 log = getLogger(__name__)
@@ -94,7 +95,7 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
 
 
 @final
-class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution]):
+class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution], SupportsRevertMove[Solution]):
     def __init__(self, neighbourhood: AddNeighbourhood, i: int, j: int):
         self.neighbourhood = neighbourhood
         # i and j are cities
@@ -113,6 +114,17 @@ class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution]
         # Update solution
         solution.tour.append(self.j)
         solution.not_visited.remove(self.j)
+        return solution
+
+    def revert_move(self, solution: Solution) -> Solution:
+        assert solution.tour[-2] == self.i
+        assert solution.tour[-1] == self.j
+        prob = solution.problem
+        # Update lower bound
+        solution.lb -= prob.dist[self.i][self.j]
+        if len(solution.not_visited) == 0:
+            solution.lb -= prob.dist[self.j][solution.tour[0]]
+        solution.not_visited.add(solution.tour.pop())
         return solution
 
     def lower_bound_increment(self, solution: Solution) -> float:
@@ -323,6 +335,7 @@ if __name__ == "__main__":
     solution = alg.greedy_construction(problem)
     # solution = alg.beam_search(problem, bw=10)
     # solution = alg.grasp(problem, 30.0)
+    # solution = alg.bb(problem)
     log.info(f"Objective value after constructive search: {solution.objective_value()}")
 
     # Run simulated annealing to improve the previous solution

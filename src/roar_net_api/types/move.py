@@ -6,18 +6,17 @@ from typing import Protocol, TypeVar
 
 from ..operations import (
     SupportsApplyMove,
-    SupportsInvertMove,
+    SupportsRevertMove,
     SupportsLowerBoundIncrement,
     SupportsObjectiveValueIncrement,
 )
 
 _SolutionT = TypeVar("_SolutionT")
-_InverseMoveT = TypeVar("_InverseMoveT", covariant=True)
 
 
 class Move(
     SupportsApplyMove[_SolutionT],
-    SupportsInvertMove[_InverseMoveT],
+    SupportsRevertMove[_SolutionT],
     SupportsLowerBoundIncrement[_SolutionT],
     SupportsObjectiveValueIncrement[_SolutionT],
     Protocol,
