@@ -4,16 +4,16 @@
 
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.11.13
+  rev: b831c3dc5d27d9da294ae4e915773b99aa24a7c5  # frozen: v0.15.10
   hooks:
   - id: ruff-check
   - id: ruff-format
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.16.0
+  rev: 8e5c80792e2ec0c87804d8ef915bf35e2caea6da  # frozen: v1.20.0
   hooks:
   - id: mypy
     args: [--strict]
-- repo: https://github.com/fsfe/reuse-tool
-  rev: v5.0.2
+- repo: https://codeberg.org/fsfe/reuse-tool
+  rev: 9fabf9eb815a57aac116b435e8346c200cdb8604  # frozen: v6.2.0
   hooks:
   - id: reuse

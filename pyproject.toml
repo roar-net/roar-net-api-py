@@ -45,6 +45,9 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "mypy>=1.16.0",
+    "pylsp-mypy>=0.7.1",
+    "python-lsp-ruff>=2.3.1",
+    "python-lsp-server>=1.14.0",
     "ruff>=0.11.8",
 ]
 
@@ -59,4 +62,10 @@ convention = "pep257"
 
 [tool.mypy]
 files = ["src/", "examples/"]
+strict = true
+
+[tool.pylsp-mypy]
+enabled = true
+live_mode = false
+dmypy = true
 strict = true

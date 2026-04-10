@@ -2,90 +2,112 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
-from typing import Any, Callable, Optional, Union, Type
 import csv
+from collections.abc import Callable, Mapping
+from contextlib import contextmanager
+from functools import wraps
+from logging import getLogger
+from time import perf_counter_ns
+from typing import Generator, TextIO, Final, TypeVar, Any, ParamSpec
 
-from roar_net_api.types import (
-    Problem,
-    Solution,
-)
+log = getLogger(__name__)
 
-perflog = logging.getLogger("PerformanceLogger")
-
-
-class ListLogger(logging.Handler):
-    def __init__(self, level: int = 5):
-        super().__init__(level=level)
-        self.records: list[str] = []
-        self.level = level
-
-    def emit(self, record: logging.LogRecord) -> None:
-        if record.levelno == self.level:
-            self.records.append(self.format(record))
-
-
-def logged(func: Callable) -> Callable:
-    def wrapper(*args, **kwargs) -> Optional[int]:
-        result = func(*args, **kwargs)
-        if result is not None:
-            logging.getLogger("PerformanceLogger").log(5, f"{result}")
-        return result
-
-    return wrapper
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 class PerformanceLogger:
-    def __init__(self, filename: Optional[str] = None, algname: Optional[str] = None):
-        self.run_id: int = 0
-        self.finished_runs: list[tuple[Union[int, float, str]]] = []
-        self.filename = filename if filename is not None else "performance_log.csv"
-        self.algname = algname
-        self.logger = ListLogger()
-        self.logger.setFormatter(logging.Formatter("%(created)f %(message)s"))
-        global perflog
-        perflog.addHandler(self.logger)
-        perflog.setLevel(5)
+    RESERVED_ATTRIBUTES: Final[set[str]] = {"run_id"}
 
-    def reset(self) -> None:
-        if self.logger.records is not None and len(self.logger.records) > 1:
-            self.finished_runs += self.process_run()
-            self.logger.records.clear()
-        perflog.log(level=5, msg="inf")
-        self.run_id += 1
-        return
+    def __init__(self) -> None:
+        self._data: list[tuple[object, ...]] = []
+        self._attributes: dict[str, str] = {}
+        self._run_id: int = 0
+        self._run_data: list[tuple[int, str]] = []
+        self._run_active: bool = False
+        self._run_start: int = 0
 
-    def add_attribute(self, key: str, value: str) -> None:
-        if self.logger.records is not None and len(self.logger.records) > 1:
-            self.reset()
-        if not hasattr(self, "attributes"):
-            self.attributes = {}
-        self.attributes[key] = value
+        self._problem_operations_to_wrap: Mapping[str, Callable[..., Any]] = {
+            "empty_solution": self._wrap_solution_creation_method,
+            "random_solution": self._wrap_solution_creation_method,
+        }
 
-    def process_run(self) -> list[tuple[Union[int, float, str]]]:
-        times_tuple, fvals = zip(*[entry.split(" ", 1) for entry in self.logger.records])
-        times = [float(t) - float(times_tuple[0]) for t in times_tuple]
-        attributes = getattr(self, "attributes", {})
-        records = []
-        for t, f in zip(times, fvals):
-            record = tuple([int(self.run_id), int(t * 1e6) + 1, float(f), *attributes.values()])
-            records.append(record)
-        return records
+        self._solution_operations_to_wrap: Mapping[str, Callable[..., Any]] = {
+            "copy_solution": self._wrap_solution_creation_method,
+            "objective_value": self._wrap_objective_value,
+        }
 
-    def save_runs(self) -> list[tuple[Union[int, float, str]]]:
-        fieldnames = ["index", "time", "fval", *(getattr(self, "attributes", {}).keys())]
-        with open(self.filename, "w", newline="") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for record in self.finished_runs:
-                row = dict(zip(fieldnames, record))
-                writer.writerow(row)
+    def set_attribute(self, key: str, value: str) -> None:
+        """
+        Sets an attribute. If the attribute already existed it is
+        silently updated.
+        """
+        if key in self.RESERVED_ATTRIBUTES:
+            log.warning("%s is a reserved attribute and the set value will be ignored" % key)
+            return
 
-        return self.finished_runs
+        self._attributes[key] = value
 
-    def close(self) -> list[tuple[Union[int, float, str]]]:
-        self.reset()
-        global perflog
-        if self.logger:
-            perflog.removeHandler(self.logger)
-        return self.save_runs()
+    def problem(self, problem: T) -> T:
+        return self._wrap_problem_operations(problem)
+
+    @contextmanager
+    def run(self) -> Generator[None, None, None]:
+        """ """
+        self._run_id += 1
+        self._run_active = True
+        self._run_start = perf_counter_ns()
+        self._run_data = []
+
+        yield
+
+        self._data.extend((self._run_id, t, f, *self._attributes.values()) for t, f in self._run_data)
+
+        self._run_active = False
+
+    def write(self, textio: TextIO) -> None:
+        # IMPROVE: We could add different formats here with a "format" argument
+        fieldnames = ["index", "time", "fval", *self._attributes.keys()]
+        writer = csv.DictWriter(textio, fieldnames=fieldnames)
+        writer.writeheader()
+        for record in self._data:
+            row = dict(zip(fieldnames, record))
+            writer.writerow(row)
+
+    def _wrap_problem_operations(self, problem: T) -> T:
+        for op, wrapper in self._problem_operations_to_wrap.items():
+            if hasattr(problem, op):
+                # log.info("Decorating problem operation %s" % op)
+                setattr(problem, op, wrapper(getattr(problem, op)))
+        return problem
+
+    def _wrap_solution_operations(self, solution: T) -> T:
+        for op, wrapper in self._solution_operations_to_wrap.items():
+            if hasattr(solution, op):
+                # log.info("Decorating solution operation %s" % op)
+                setattr(solution, op, wrapper(getattr(solution, op)))
+        return solution
+
+    def _wrap_solution_creation_method(self, f: Callable[P, T]) -> Callable[P, T]:
+        @wraps(f)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            solution = f(*args, **kwargs)
+            return self._wrap_solution_operations(solution)
+
+        return wrapper
+
+    def _wrap_objective_value(self, f: Callable[P, T]) -> Callable[P, T]:
+        @wraps(f)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            obj = f(*args, **kwargs)
+            self._log_objective_value(obj)
+            return obj
+
+        return wrapper
+
+    def _log_objective_value(self, val: Any) -> None:
+        if not self._run_active:
+            log.debug("Run not active, ignoring objective value log")
+            return
+
+        self._run_data.append((perf_counter_ns() - self._run_start, str(val)))

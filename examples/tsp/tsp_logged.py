@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import math
 import random
-import sys
 from collections.abc import Iterable, Sequence
 import logging
 from typing import Optional, Protocol, Self, TextIO, TypeVar, final
@@ -30,7 +29,7 @@ from roar_net_api.operations import (
     SupportsRandomSolution,
 )
 
-from roar_net_api.utils.logging import logged, PerformanceLogger
+from roar_net_api.utils.logging import PerformanceLogger
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +82,6 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
     def copy_solution(self) -> Self:
         return self.__class__(self.problem, self.tour.copy(), self.not_visited.copy(), self.lb)
 
-    @logged
     def objective_value(self) -> Optional[int]:
         if self.is_feasible:
             return self.lb
@@ -317,34 +315,51 @@ class Problem(
 
 if __name__ == "__main__":
     import roar_net_api.algorithms as alg
+    import sys
 
-    log.setLevel(logging.INFO)
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(logging.Formatter("%(levelname)s;%(asctime)s;%(message)s"))
-    log.addHandler(handler)
+    logging.basicConfig(
+        stream=sys.stderr,
+        level="WARNING",
+        format="%(levelname)s;%(asctime)s;%(message)s",
+    )
 
-    perflogger = PerformanceLogger("log_test.csv")
-    for instance in glob("*.tsp", root_dir="instances"):
-        problem = Problem.from_textio(open(f"instances/{instance}"))
-        log.info(f"Read problem {problem.name} of size {problem.n}")
-        perflogger.add_attribute("problem", problem.name)
-        perflogger.add_attribute("n", f"{problem.n}")
+    reps = 1
 
-        log.info("Starting SA runs")
-        perflogger.add_attribute("algorithm", "SA")
+    perflogger = PerformanceLogger()
+
+    for instance in glob("*.tsp", root_dir="examples/tsp/instances"):
+        problem = Problem.from_textio(open(f"examples/tsp/instances/{instance}"))
+
+        # This is required!
+        problem = perflogger.problem(problem)
+
+        # Setup common attributes
+        perflogger.set_attribute("problem", problem.name)
+        perflogger.set_attribute("n", str(problem.n))
+
+        log.info("Starting Greedy+SA runs")
+        perflogger.set_attribute("algorithm", "Greedy+SA")
+        for rep in range(reps):
+            with perflogger.run():
+                solution = alg.greedy_construction(problem)
+                solution = alg.sa(problem, solution, 3.0, 30.0)
+                log.info(f"Objective value after local search: {solution.objective_value()}")
+
+        log.info("Starting Greedy + RLS runs")
+        perflogger.set_attribute("algorithm", "Greedy+RLS")
+        for rep in range(reps):
+            with perflogger.run():
+                solution = alg.greedy_construction(problem)
+                solution = alg.rls(problem, solution, 3.0)
+                log.info(f"Objective value after local search: {solution.objective_value()}")
+
+        log.info("Starting SA runs (with pre-initialized solution)")
+        perflogger.set_attribute("algorithm", "SA")
         for rep in range(5):
-            perflogger.reset()
             solution = alg.greedy_construction(problem)
-            solution = alg.sa(problem, solution, 3.0, 30.0)
-            solution.objective_value()
-            log.info(f"Objective value after local search: {solution.objective_value()}")
+            with perflogger.run():
+                solution = alg.sa(problem, solution, 3.0, 30.0)
+                log.info(f"Objective value after local search: {solution.objective_value()}")
 
-        log.info("Starting RLS runs")
-        perflogger.add_attribute("algorithm", "RLS")
-        for rep in range(5):
-            perflogger.reset()
-            solution = alg.greedy_construction(problem)
-            solution = alg.rls(problem, solution, 3.0)
-            solution.objective_value()
-            log.info(f"Objective value after local search: {solution.objective_value()}")
-    _ = perflogger.close()
+    with open("log_test.csv", "w") as f:
+        perflogger.write(f)
