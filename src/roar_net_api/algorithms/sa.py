@@ -16,8 +16,11 @@ from ..operations import (
     SupportsObjectiveValueIncrement,
     SupportsRandomMovesWithoutReplacement,
 )
+from ..utils.logging import PerformanceLogger
 
 log = getLogger(__name__)
+
+perflogger = PerformanceLogger()
 
 
 class _Solution(SupportsCopySolution, SupportsObjectiveValue, Protocol): ...
@@ -71,6 +74,10 @@ def sa(
     neigh = problem.local_neighbourhood()
     best = solution.copy_solution()
     bestobj = best.objective_value()
+
+    if perflogger.active:
+        perflogger.log(bestobj, __name__)
+
     while perf_counter() - start < budget:
         for move in neigh.random_moves_without_replacement(solution):
             t = temperature(1 - (perf_counter() - start) / budget)
@@ -88,5 +95,7 @@ def sa(
                     # log.info(f"Best solution: {obj}")
                     best = solution.copy_solution()
                     bestobj = obj
+                    if perflogger.active:
+                        perflogger.log(bestobj, __name__)
                 break
     return best

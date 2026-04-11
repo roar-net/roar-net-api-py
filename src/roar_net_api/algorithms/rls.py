@@ -9,14 +9,21 @@ from typing import Protocol, TypeVar
 from ..operations import (
     SupportsApplyMove,
     SupportsLocalNeighbourhood,
+    SupportsObjectiveValue,
     SupportsObjectiveValueIncrement,
     SupportsRandomMovesWithoutReplacement,
 )
+from ..utils.logging import PerformanceLogger
 
 log = getLogger(__name__)
 
+perflogger = PerformanceLogger()
 
-_TSolution = TypeVar("_TSolution")
+
+class _Solution(SupportsObjectiveValue, Protocol): ...
+
+
+_TSolution = TypeVar("_TSolution", bound=_Solution)
 
 
 class _Move(SupportsApplyMove[_TSolution], SupportsObjectiveValueIncrement[_TSolution], Protocol): ...
@@ -28,10 +35,17 @@ class _Neighbourhood(SupportsRandomMovesWithoutReplacement[_TSolution, _Move[_TS
 class _Problem(SupportsLocalNeighbourhood[_Neighbourhood[_TSolution]], Protocol): ...
 
 
-def rls(problem: _Problem[_TSolution], solution: _TSolution, budget: float) -> _TSolution:
+def rls(
+    problem: _Problem[_TSolution],
+    solution: _TSolution,
+    budget: float,
+) -> _TSolution:
     start = perf_counter()
 
     neigh = problem.local_neighbourhood()
+
+    if perflogger.active:
+        perflogger.log(solution.objective_value(), __name__)
 
     while perf_counter() - start < budget:
         for move in neigh.random_moves_without_replacement(solution):
@@ -40,6 +54,8 @@ def rls(problem: _Problem[_TSolution], solution: _TSolution, budget: float) -> _
             if incr <= 0:
                 log.info(f"Found increment: {incr}")
                 solution = move.apply_move(solution)
+                if perflogger.active:
+                    perflogger.log(solution.objective_value(), __name__)
                 break
             if perf_counter() - start >= budget:
                 return solution

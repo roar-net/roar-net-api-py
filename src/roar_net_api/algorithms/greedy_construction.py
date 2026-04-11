@@ -13,12 +13,19 @@ from ..operations import (
     SupportsEmptySolution,
     SupportsLowerBoundIncrement,
     SupportsMoves,
+    SupportsObjectiveValue,
 )
+from ..utils.logging import PerformanceLogger
 
 log = getLogger(__name__)
 
+perflogger = PerformanceLogger()
 
-_TSolution = TypeVar("_TSolution")
+
+class _Solution(SupportsObjectiveValue, Protocol): ...
+
+
+_TSolution = TypeVar("_TSolution", bound=_Solution)
 
 
 class _Move(SupportsApplyMove[_TSolution], SupportsLowerBoundIncrement[_TSolution], Protocol): ...
@@ -32,7 +39,10 @@ class _Problem(
 ): ...
 
 
-def greedy_construction(problem: _Problem[_TSolution], solution: Optional[_TSolution] = None) -> _TSolution:
+def greedy_construction(
+    problem: _Problem[_TSolution],
+    solution: Optional[_TSolution] = None,
+) -> _TSolution:
     """
     Solves `problem` using a greedy construction approach.
 
@@ -42,6 +52,9 @@ def greedy_construction(problem: _Problem[_TSolution], solution: Optional[_TSolu
 
     if solution is None:
         solution = problem.empty_solution()
+
+    if perflogger.active:
+        perflogger.log(solution.objective_value(), __name__)
 
     move_iter = iter(_valid_moves_and_increments(neigh, solution))
     move_and_incr = next(move_iter, None)
@@ -56,6 +69,8 @@ def greedy_construction(problem: _Problem[_TSolution], solution: Optional[_TSolu
                     break
 
         solution = best_move.apply_move(solution)
+        if perflogger.active:
+            perflogger.log(solution.objective_value(), __name__)
 
         move_iter = iter(_valid_moves_and_increments(neigh, solution))
         move_and_incr = next(move_iter, None)
@@ -63,7 +78,8 @@ def greedy_construction(problem: _Problem[_TSolution], solution: Optional[_TSolu
     return solution
 
 
-# IMPROVE: this reuses a lot of the code from the above. Maybe we should make random tie breaking a parameter?
+# IMPROVE: this reuses a lot of the code from the above. Maybe we
+# could make random tie breaking a parameter?
 def greedy_construction_with_random_tie_breaking(
     problem: _Problem[_TSolution], solution: Optional[_TSolution] = None
 ) -> _TSolution:

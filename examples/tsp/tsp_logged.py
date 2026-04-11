@@ -323,22 +323,19 @@ if __name__ == "__main__":
         format="%(levelname)s;%(asctime)s;%(message)s",
     )
 
-    reps = 1
+    reps = 2
 
     perflogger = PerformanceLogger()
 
     for instance in glob("*.tsp", root_dir="examples/tsp/instances"):
         problem = Problem.from_textio(open(f"examples/tsp/instances/{instance}"))
 
-        # This is required!
-        problem = perflogger.problem(problem)
-
         # Setup common attributes
         perflogger.set_attribute("problem", problem.name)
         perflogger.set_attribute("n", str(problem.n))
 
         log.info("Starting Greedy+SA runs")
-        perflogger.set_attribute("algorithm", "Greedy+SA")
+        perflogger.set_attribute("solver", "Greedy+SA")
         for rep in range(reps):
             with perflogger.run():
                 solution = alg.greedy_construction(problem)
@@ -346,7 +343,7 @@ if __name__ == "__main__":
                 log.info(f"Objective value after local search: {solution.objective_value()}")
 
         log.info("Starting Greedy + RLS runs")
-        perflogger.set_attribute("algorithm", "Greedy+RLS")
+        perflogger.set_attribute("solver", "Greedy+RLS")
         for rep in range(reps):
             with perflogger.run():
                 solution = alg.greedy_construction(problem)
@@ -354,8 +351,10 @@ if __name__ == "__main__":
                 log.info(f"Objective value after local search: {solution.objective_value()}")
 
         log.info("Starting SA runs (with pre-initialized solution)")
-        perflogger.set_attribute("algorithm", "SA")
-        for rep in range(5):
+        perflogger.set_attribute("solver", "SA")
+        for rep in range(reps):
+            # Since we are not inside a run, data from the greedy
+            # construction is not logged.
             solution = alg.greedy_construction(problem)
             with perflogger.run():
                 solution = alg.sa(problem, solution, 3.0, 30.0)
