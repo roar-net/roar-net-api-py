@@ -166,6 +166,7 @@ class AddNeighbourhood(SupportsMoves[Solution, AddMove]):
     def moves(self, solution: Solution) -> Iterable[AddMove]:
         assert self.problem == solution.problem
         i = solution.tour[-1]
+        # notation for the moves of the TSP
         # Note: the moves are generated in sorted order of j for debuging purposes, it can be reverted to the original form if needed.
         for j in sorted(solution.not_visited):
             yield AddMove(self, i, j)
