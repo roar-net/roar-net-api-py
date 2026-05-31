@@ -1,0 +1,6 @@
+name = "RoarNetAPI"
+uuid = "a67ff400-ed6e-493a-b5c6-f1c65bc680fd"
+version = "0.1.0"
+
+[julia]
+version = "1.9"

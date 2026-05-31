@@ -1,0 +1,10 @@
+# This file is machine-generated - editing it directly is not advised
+
+julia_version = "1.12.3"
+manifest_format = "2.0"
+project_hash = "ce9ffca1e23f9bd2cf131652fc47d9c9ae78d75f"
+
+[[deps.RoarNetAPI]]
+path = "."
+uuid = "00000000-0000-0000-0000-000000000000"
+version = "0.1.0"
