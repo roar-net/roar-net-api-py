@@ -50,6 +50,9 @@ NODE_COORD_SECTION
 5 2 2
 EOF
 
+#For the first time run add all the depencencies
+
+julia --project=julia -e 'using Pkg; Pkg.instantiate()'
 # Run the solver
 julia --project=julia julia/examples/tsp/tsp.jl < /tmp/test.tsp
 ```
