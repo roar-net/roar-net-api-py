@@ -4,8 +4,8 @@
 
 from typing import Protocol, TypeVar
 
-InverseMove = TypeVar("InverseMove", covariant=True)
+Solution = TypeVar("Solution")
 
 
-class SupportsInvertMove(Protocol[InverseMove]):
-    def invert_move(self) -> InverseMove: ...
+class SupportsRevertMove(Protocol[Solution]):
+    def revert_move(self, solution: Solution) -> Solution: ...

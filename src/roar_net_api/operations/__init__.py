@@ -8,7 +8,7 @@ from .copy_solution import SupportsCopySolution
 from .destruction_neighbourhood import SupportsDestructionNeighbourhood
 from .empty_solution import SupportsEmptySolution
 from .heuristic_solution import SupportsHeuristicSolution
-from .invert_move import SupportsInvertMove
+from .revert_move import SupportsRevertMove
 from .local_neighbourhood import SupportsLocalNeighbourhood
 from .lower_bound_increment import SupportsLowerBoundIncrement
 from .lower_bound import SupportsLowerBound
@@ -26,7 +26,7 @@ __all__ = [
     "SupportsDestructionNeighbourhood",
     "SupportsEmptySolution",
     "SupportsHeuristicSolution",
-    "SupportsInvertMove",
+    "SupportsRevertMove",
     "SupportsLocalNeighbourhood",
     "SupportsLowerBoundIncrement",
     "SupportsLowerBound",
