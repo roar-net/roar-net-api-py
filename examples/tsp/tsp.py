@@ -76,7 +76,7 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
         f.write("NAME : %s\nTYPE : TOUR\n" % (self.problem.name + ".tour"))
         f.write("DIMENSION : %d\nTOUR_SECTION\n" % self.problem.n)
         f.write("\n".join(map(lambda x: str(x + 1), self.tour)))
-        f.write("\nEOF\n")
+        f.write("\n-1\nEOF\n")
 
     def copy_solution(self) -> Self:
         return self.__class__(self.problem, self.tour.copy(), self.not_visited.copy(), self.lb)
@@ -95,35 +95,30 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
 
 @final
 class AddMove(SupportsApplyMove[Solution], SupportsLowerBoundIncrement[Solution]):
-    def __init__(self, neighbourhood: AddNeighbourhood, i: int, j: int):
-        self.neighbourhood = neighbourhood
-        # i and j are cities
+    def __init__(self, _: AddNeighbourhood, i: int):
         self.i = i
-        self.j = j
 
     def apply_move(self, solution: Solution) -> Solution:
-        assert solution.tour[-1] == self.i
         prob = solution.problem
         # Update lower bound
-        solution.lb += prob.dist[self.i][self.j]
+        if solution.tour:
+            solution.lb += prob.dist[solution.tour[-1]][self.i]
         if len(solution.not_visited) == 1:
-            solution.lb += prob.dist[self.j][solution.tour[0]]
-        # Tighter, but *not* better!
-        # solution.lb += prob.dist[self.j][solution.tour[0]] - prob.dist[self.i][solution.tour[0]]
+            solution.lb += prob.dist[self.i][solution.tour[0]]
         # Update solution
-        solution.tour.append(self.j)
-        solution.not_visited.remove(self.j)
+        solution.tour.append(self.i)
+        solution.not_visited.remove(self.i)
         return solution
 
     def lower_bound_increment(self, solution: Solution) -> float:
-        assert solution.tour[-1] == self.i
-        prob = solution.problem
-        incr = prob.dist[self.i][self.j]
-        if len(solution.not_visited) == 1:
-            incr += prob.dist[self.j][solution.tour[0]]
-        # Tighter, but *not* better!
-        # incr += prob.dist[self.j][solution.tour[0]] - prob.dist[self.i][solution.tour[0]]
-        return incr
+        if solution.tour:
+            prob = solution.problem
+            incr = prob.dist[solution.tour[-1]][self.i]
+            if len(solution.not_visited) == 1:
+                incr += prob.dist[self.i][solution.tour[0]]
+            return incr
+        else:
+            return 0
 
 
 @final
@@ -165,9 +160,8 @@ class AddNeighbourhood(SupportsMoves[Solution, AddMove]):
 
     def moves(self, solution: Solution) -> Iterable[AddMove]:
         assert self.problem == solution.problem
-        i = solution.tour[-1]
-        for j in solution.not_visited:
-            yield AddMove(self, i, j)
+        for i in solution.not_visited:
+            yield AddMove(self, i)
 
 
 @final
@@ -300,7 +294,7 @@ class Problem(
             raise Exception(f"Instance format {dt} not supported")
 
     def empty_solution(self) -> Solution:
-        return Solution(self, [0], set(range(1, self.n)), 0)
+        return Solution(self, [], set(range(self.n)), 0)
 
     def random_solution(self) -> Solution:
         c = list(range(1, self.n))

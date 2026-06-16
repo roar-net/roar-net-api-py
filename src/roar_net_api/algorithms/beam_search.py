@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import bisect
+import random
 from collections.abc import Callable, Iterator
 from logging import getLogger
 from operator import itemgetter
@@ -60,16 +61,17 @@ class KMin(Generic[Key, Value]):
     def __init__(self, k: int, key: KeyFunc[Value, Key]):
         self.k = k
         self.key = key
-        self.keys: list[Key] = []
+        self.keys: list[tuple[Key, float]] = []
         self.values: list[Value] = []
 
     def insert(self, value: Value) -> None:
         key = self.key(value)
         if len(self.values) == self.k:
-            if key > self.keys[-1]:
+            if key > self.keys[-1][0]:
                 return
-        i = bisect.bisect_right(self.keys, key)
-        self.keys.insert(i, key)
+        rkey = (key, random.random())
+        i = bisect.bisect_left(self.keys, rkey)
+        self.keys.insert(i, rkey)
         self.values.insert(i, value)
         if len(self.values) > self.k:
             self.keys.pop()

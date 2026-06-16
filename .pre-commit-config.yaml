@@ -3,17 +3,33 @@
 # SPDX-License-Identifier: CC0-1.0
 
 repos:
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.11.13
+- repo: local
   hooks:
   - id: ruff-check
+    name: ruff-check
+    entry: uv run -- ruff check
+    language: unsupported
+    types_or: [python, pyi]
+    require_serial: true
   - id: ruff-format
-- repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.16.0
-  hooks:
+    name: ruff-format
+    entry: uv run -- ruff format
+    language: unsupported
+    types_or: [python, pyi]
+    require_serial: true
   - id: mypy
-    args: [--strict]
-- repo: https://github.com/fsfe/reuse-tool
-  rev: v5.0.2
+    name: mypy
+    entry: uv run -- mypy
+    language: unsupported
+    types_or: [python, pyi]
+    require_serial: true
+  - id: pytest
+    name: pytest
+    entry: uv run -- pytest -n auto
+    language: unsupported
+    types_or: [python]
+    require_serial: true
+- repo: https://codeberg.org/fsfe/reuse-tool
+  rev: 9fabf9eb815a57aac116b435e8346c200cdb8604  # frozen: v6.2.0
   hooks:
   - id: reuse
