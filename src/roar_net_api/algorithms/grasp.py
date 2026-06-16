@@ -61,8 +61,8 @@ def grasp(
 
     while perf_counter() - start < budget:
         s = solution.copy_solution()
-        b = None
-        bobj = None
+        b: Optional[_TSolution] = None
+        bobj: Optional[Union[int | float]] = None
 
         cl = _valid_moves_and_increments(neigh, s)
         while len(cl) != 0:
