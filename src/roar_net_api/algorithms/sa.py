@@ -85,7 +85,7 @@ def sa(
                 assert obj is not None
 
                 if bestobj is None or obj < bestobj:
-                    log.info(f"Best solution: {obj}")
+                    # log.info(f"Best solution: {obj}")
                     best = solution.copy_solution()
                     bestobj = obj
                 break

@@ -4,4 +4,4 @@
 
 from . import algorithms, operations, types
 
-__all__ = ["algorithms", "operations", "types"]
+__all__ = ["algorithms", "operations", "types", "utils"]
