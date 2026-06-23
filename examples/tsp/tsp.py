@@ -72,11 +72,13 @@ class Solution(SupportsCopySolution, SupportsObjectiveValue, SupportsLowerBound)
     def is_feasible(self) -> bool:
         return len(self.not_visited) == 0
 
-    def to_textio(self, f: TextIO) -> None:
-        f.write("NAME : %s\nTYPE : TOUR\n" % (self.problem.name + ".tour"))
-        f.write("DIMENSION : %d\nTOUR_SECTION\n" % self.problem.n)
-        f.write("\n".join(map(lambda x: str(x + 1), self.tour)))
-        f.write("\nEOF\n")
+    def to_str(self) -> str:
+        output = ''
+        output += ("NAME : %s\nTYPE : TOUR\n" % (self.problem.name + ".tour"))
+        output += ("DIMENSION : %d\nTOUR_SECTION\n" % self.problem.n)
+        output += ("\n".join(map(lambda x: str(x + 1), self.tour)))
+        output += "\nEOF\n"
+        return output
 
     def copy_solution(self) -> Self:
         return self.__class__(self.problem, self.tour.copy(), self.not_visited.copy(), self.lb)
@@ -264,11 +266,12 @@ class Problem(
         return self.l_nbhood
 
     @classmethod
-    def from_textio(cls, f: TextIO) -> Self:
+    def from_str(cls, input: str) -> Self:
         """
-        Create a problem from a text I/O source `f` in TSPLIB format
+        Create a problem from a str source `input` in TSPLIB format
         """
-        s = f.readline().strip()
+        lines = input.splitlines()
+        s = lines.pop(0).strip()
         n = None
         dt = None
         name = "unnamed"
@@ -281,11 +284,11 @@ class Problem(
                 dt = line[1].strip()
             elif k == "NAME":
                 name = line[1].strip()
-            s = f.readline().strip()
+            s = lines.pop(0).strip()
         if n is not None and dt == "EUC_2D":
             kxy: list[tuple[float, ...]] = []
             for i in range(n):
-                kxy.append(tuple(map(float, f.readline().split())))
+                kxy.append(tuple(map(float, lines.pop(0).split())))
             kxy = sorted(kxy)
             dist: list[tuple[int, ...]] = []
             for i in range(n):
@@ -317,7 +320,17 @@ if __name__ == "__main__":
 
     logging.basicConfig(stream=sys.stderr, level="INFO", format="%(levelname)s;%(asctime)s;%(message)s")
 
-    problem = Problem.from_textio(sys.stdin)
+    assert len(sys.argv) == 3
+    input_path = sys.argv[1]
+    assert input_path is not None
+    output_path = sys.argv[2]
+    assert output_path is not None
+
+    log.info(f"Reading input file from {input_path}")
+    with open(input_path, 'r') as file:
+        input_str = file.read()
+    assert input_str is not None
+    problem = Problem.from_str(input_str)
 
     # Run greedy construction to get an initial solution
     solution = alg.greedy_construction(problem)
@@ -332,5 +345,9 @@ if __name__ == "__main__":
     # solution = alg.first_improvement(problem, solution)
     log.info(f"Objective value after local search: {solution.objective_value()}")
 
-    # Print the final solution to stdout
-    solution.to_textio(sys.stdout)
+    # Output the solution to a file
+    log.info(f"Writing output file to {output_path}")
+    output_str = solution.to_str()
+    assert output_str is not None
+    with open(output_path, "a") as f:
+      f.write(output_str)
