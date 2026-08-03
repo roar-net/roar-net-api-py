@@ -9,6 +9,24 @@ SPDX-License-Identifier: Apache-2.0
 This tutorial walks you through using the ROAR-NET API in Julia, from
 installation to implementing your own optimisation model.
 
+## 0. Strong typing
+
+The library is strongly typed throughout. Every interface operation
+declares a typed signature against the abstract markers (`Problem`,
+`Solution`, `Move`, `Neighbourhood`); every algorithm entry point
+takes its problem/solution arguments against those same markers. The
+return contracts are:
+
+- Solution-returning operations: `::Solution`.
+- Numeric returns that may be infeasible: `::Union{Nothing, <:Real}`.
+- Iterable returns: `::Any` (either a `Vector{<:Move}` or a
+  `Channel{<:Move}` is accepted).
+
+When you implement your own model, mirror these contracts on your
+concrete methods — add the return type that matches your concrete
+types (e.g. `::Int` for knapsack, `::Float64` for continuous problems)
+and subtype the appropriate abstract marker.
+
 ## 1. Installation
 
 The package is in the `julia/` directory of this repository. To use it:
@@ -112,8 +130,13 @@ algorithms you want to use. For greedy construction (constructive
 neighbourhood), implement:
 
 ```julia
+# Define a constructive neighbourhood type
+struct MyKnapsackNeighbourhood <: Neighbourhood
+    problem::MyKnapsack
+end
+
 # Create an empty solution
-function RoarNetAPI.empty_solution(prob::MyKnapsack)
+function RoarNetAPI.empty_solution(prob::MyKnapsack)::MySolution
     return MySolution(
         falses(length(prob.items)),
         0, 0
@@ -121,7 +144,7 @@ function RoarNetAPI.empty_solution(prob::MyKnapsack)
 end
 
 # Return a constructive neighbourhood
-function RoarNetAPI.construction_neighbourhood(prob::MyKnapsack)
+function RoarNetAPI.construction_neighbourhood(prob::MyKnapsack)::MyKnapsackNeighbourhood
     return MyKnapsackNeighbourhood(prob)
 end
 
@@ -132,7 +155,7 @@ struct MyAddMove <: Move
 end
 
 # List all valid moves from a solution
-function RoarNetAPI.moves(neigh::MyKnapsackNeighbourhood, sol::MySolution)
+function RoarNetAPI.moves(neigh::MyKnapsackNeighbourhood, sol::MySolution)::Vector{MyAddMove}
     prob = neigh.problem
     moves = MyAddMove[]
     for i in eachindex(prob.items)
@@ -144,7 +167,7 @@ function RoarNetAPI.moves(neigh::MyKnapsackNeighbourhood, sol::MySolution)
 end
 
 # Apply a move to a solution
-function RoarNetAPI.apply_move(mv::MyAddMove, sol::MySolution)
+function RoarNetAPI.apply_move(mv::MyAddMove, sol::MySolution)::MySolution
     prob = mv.neighbourhood.problem
     item = prob.items[mv.item_idx]
     sol.selected[mv.item_idx] = true
@@ -154,7 +177,7 @@ function RoarNetAPI.apply_move(mv::MyAddMove, sol::MySolution)
 end
 
 # Lower bound increment (for constructive guidance)
-function RoarNetAPI.lower_bound_increment(mv::MyAddMove, sol::MySolution)
+function RoarNetAPI.lower_bound_increment(mv::MyAddMove, sol::MySolution)::Int
     prob = mv.neighbourhood.problem
     item = prob.items[mv.item_idx]
     # For knapsack, lower bound on remaining value is 0
@@ -163,12 +186,12 @@ function RoarNetAPI.lower_bound_increment(mv::MyAddMove, sol::MySolution)
 end
 
 # Objective value
-function RoarNetAPI.objective_value(sol::MySolution)
+function RoarNetAPI.objective_value(sol::MySolution)::Int
     return -sol.value
 end
 
 # Copy a solution
-function RoarNetAPI.copy_solution(sol::MySolution)
+function RoarNetAPI.copy_solution(sol::MySolution)::MySolution
     return MySolution(copy(sol.selected), sol.weight, sol.value)
 end
 ```
@@ -202,7 +225,7 @@ struct MyLocalNeighbourhood <: Neighbourhood
     problem::MyKnapsack
 end
 
-function RoarNetAPI.local_neighbourhood(prob::MyKnapsack)
+function RoarNetAPI.local_neighbourhood(prob::MyKnapsack)::MyLocalNeighbourhood
     return MyLocalNeighbourhood(prob)
 end
 
@@ -212,7 +235,7 @@ struct MySwapMove <: Move
     remove_idx::Int
 end
 
-function RoarNetAPI.moves(neigh::MyLocalNeighbourhood, sol::MySolution)
+function RoarNetAPI.moves(neigh::MyLocalNeighbourhood, sol::MySolution)::Vector{MySwapMove}
     prob = neigh.problem
     moves = MySwapMove[]
     for add in eachindex(prob.items)
@@ -230,7 +253,7 @@ function RoarNetAPI.moves(neigh::MyLocalNeighbourhood, sol::MySolution)
     return moves
 end
 
-function RoarNetAPI.apply_move(mv::MySwapMove, sol::MySolution)
+function RoarNetAPI.apply_move(mv::MySwapMove, sol::MySolution)::MySolution
     prob = mv.neighbourhood.problem
     sol.selected[mv.remove_idx] = false
     sol.selected[mv.add_idx] = true
@@ -239,7 +262,7 @@ function RoarNetAPI.apply_move(mv::MySwapMove, sol::MySolution)
     return sol
 end
 
-function RoarNetAPI.objective_value_increment(mv::MySwapMove, sol::MySolution)
+function RoarNetAPI.objective_value_increment(mv::MySwapMove, sol::MySolution)::Int
     prob = mv.neighbourhood.problem
     return -(prob.items[mv.add_idx].value - prob.items[mv.remove_idx].value)
 end
@@ -275,7 +298,7 @@ Builds a solution by repeatedly applying the move with the smallest
 lower bound increment. Stops when no moves remain.
 
 ```julia
-greedy_construction(problem; solution=nothing)
+greedy_construction(problem::Problem; solution::Union{Nothing, Solution}=nothing)::Solution
 ```
 
 ### Beam search
@@ -284,7 +307,7 @@ Maintains a beam of `bw` partial solutions, extending each by its best
 moves at each step. Returns the best feasible solution found.
 
 ```julia
-beam_search(problem; solution=nothing, bw=10)
+beam_search(problem::Problem; solution::Union{Nothing, Solution}=nothing, bw::Integer=10)::Solution
 ```
 
 ### GRASP
@@ -295,7 +318,10 @@ controlled by `alpha`. Optionally applies a local search to each
 constructed solution.
 
 ```julia
-grasp(problem, budget; solution=nothing, alpha=0.1, local_search=nothing)
+grasp(problem::Problem, budget::Real;
+      solution::Union{Nothing, Solution}=nothing,
+      alpha::Real=0.1,
+      local_search::Union{Nothing, Function}=nothing)::Solution
 ```
 
 ### Best improvement
@@ -304,7 +330,7 @@ Exhaustively evaluates all moves in the local neighbourhood, applies the
 best improving move, and repeats until no improving move exists.
 
 ```julia
-best_improvement(problem, solution)
+best_improvement(problem::Problem, solution::Solution)::Solution
 ```
 
 ### First improvement
@@ -313,7 +339,7 @@ Scans the local neighbourhood in random order, applies the first
 improving move found, and repeats until no improving move exists.
 
 ```julia
-first_improvement(problem, solution)
+first_improvement(problem::Problem, solution::Solution)::Solution
 ```
 
 ### RLS (Random Local Search)
@@ -322,7 +348,7 @@ Samples random moves from the local neighbourhood within a time budget.
 Applies any non-worsening move immediately.
 
 ```julia
-rls(problem, solution, budget)
+rls(problem::Problem, solution::Solution, budget::Real)::Solution
 ```
 
 ### SA (Simulated Annealing)
@@ -332,7 +358,9 @@ $\exp(-\Delta / T)$ for worsening moves. Temperature decays linearly
 from `init_temp` to 0 over the `budget`.
 
 ```julia
-sa(problem, solution, budget, init_temp; temperature=nothing, acceptance=nothing)
+sa(problem::Problem, solution::Solution, budget::Real, init_temp::Real;
+   temperature::Union{Nothing, Function}=nothing,
+   acceptance::Union{Nothing, Function}=nothing)::Solution
 ```
 
 Custom temperature schedules and acceptance functions can be provided as
@@ -348,6 +376,11 @@ sa(problem, sol, 10.0, 100.0,
 
 - **Mutable structs**: Solutions are typically `mutable struct` so that
   `apply_move` can modify them in-place.
+- **Strong typing**: Always annotate the fields of your structs and add
+  explicit return types to your interface methods (e.g.
+  `objective_value(sol::MySolution)::Int`). This keeps dispatch
+  type-stable and lets the `hasmethod` tests in the test suite verify
+  that every operation is implemented.
 - **Performance**: Use `Vector` for dense data and `Dict` for sparse.
   For the TSP distance matrix, a `Matrix{Int}` is fastest.
 - **Randomness**: Call `Random.seed!(n)` for reproducible runs.

@@ -18,11 +18,44 @@ using RoarNetAPI
         @test_throws MethodError random_moves_without_replacement(nothing, nothing)
     end
 
-    @testset "Abstract types" begin
+@testset "Abstract types" begin
         @test Problem <: Any
         @test Solution <: Any
         @test Move <: Any
         @test Neighbourhood <: Any
+    end
+
+    @testset "Strong typing of operations" begin
+        # Each interface operation should be registered with a method whose
+        # arguments are constrained to the abstract types exported by
+        # RoarNetAPI.Types. This guards the contract that concrete types
+        # subtype these markers.
+        @test hasmethod(apply_move, Tuple{Move, Solution})
+        @test hasmethod(construction_neighbourhood, Tuple{Problem})
+        @test hasmethod(copy_solution, Tuple{Solution})
+        @test hasmethod(destruction_neighbourhood, Tuple{Problem})
+        @test hasmethod(empty_solution, Tuple{Problem})
+        @test hasmethod(heuristic_solution, Tuple{Problem})
+        @test hasmethod(invert_move, Tuple{Move})
+        @test hasmethod(local_neighbourhood, Tuple{Problem})
+        @test hasmethod(lower_bound, Tuple{Solution})
+        @test hasmethod(lower_bound_increment, Tuple{Move, Solution})
+        @test hasmethod(moves, Tuple{Neighbourhood, Solution})
+        @test hasmethod(objective_value, Tuple{Solution})
+        @test hasmethod(objective_value_increment, Tuple{Move, Solution})
+        @test hasmethod(random_move, Tuple{Neighbourhood, Solution})
+        @test hasmethod(random_moves_without_replacement, Tuple{Neighbourhood, Solution})
+        @test hasmethod(random_solution, Tuple{Problem})
+
+        # Algorithm entry points
+        @test hasmethod(greedy_construction, Tuple{Problem})
+        @test hasmethod(greedy_construction_with_random_tie_breaking, Tuple{Problem})
+        @test hasmethod(beam_search, Tuple{Problem})
+        @test hasmethod(best_improvement, Tuple{Problem, Solution})
+        @test hasmethod(first_improvement, Tuple{Problem, Solution})
+        @test hasmethod(grasp, Tuple{Problem, Real})
+        @test hasmethod(rls, Tuple{Problem, Solution, Real})
+        @test hasmethod(sa, Tuple{Problem, Solution, Real, Real})
     end
 
     @testset "Greedy construction on minimal problem" begin
@@ -32,19 +65,19 @@ using RoarNetAPI
         end
         struct EmptyNeighbourhood <: Neighbourhood end
 
-        function RoarNetAPI.empty_solution(::MinimalProblem)
+        function RoarNetAPI.empty_solution(::MinimalProblem)::MinimalSolution
             return MinimalSolution(0)
         end
-        function RoarNetAPI.objective_value(sol::MinimalSolution)
+        function RoarNetAPI.objective_value(sol::MinimalSolution)::Int
             return sol.value
         end
-        function RoarNetAPI.copy_solution(sol::MinimalSolution)
+        function RoarNetAPI.copy_solution(sol::MinimalSolution)::MinimalSolution
             return MinimalSolution(sol.value)
         end
-        function RoarNetAPI.construction_neighbourhood(::MinimalProblem)
+        function RoarNetAPI.construction_neighbourhood(::MinimalProblem)::EmptyNeighbourhood
             return EmptyNeighbourhood()
         end
-        function RoarNetAPI.moves(::EmptyNeighbourhood, ::MinimalSolution)
+        function RoarNetAPI.moves(::EmptyNeighbourhood, ::MinimalSolution)::Vector{Any}
             return []
         end
 

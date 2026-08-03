@@ -5,7 +5,7 @@ using Random
 
 include("tsp.jl")
 
-function solve(algo, prob, budget)
+function solve(algo::AbstractString, prob::TSPProblem, budget::Real)::TSPSolution
     if algo == "greedy"
         return greedy_construction(prob)
     elseif algo == "best"
@@ -29,40 +29,41 @@ function solve(algo, prob, budget)
     end
 end
 
-function run_benchmark()
+function run_benchmark()::Nothing
     if length(ARGS) < 3
         println(stderr, "Usage: benchmark.jl <algorithm> <seed> <budget> [trials]")
         println(stderr, "  algorithm: greedy, best, first, beam, grasp, rls, sa")
         exit(1)
     end
 
-    algo = ARGS[1]
-    seed0 = parse(Int, ARGS[2])
-    budget = parse(Float64, ARGS[3])
-    trials = length(ARGS) >= 4 ? parse(Int, ARGS[4]) : 1
+    algo::AbstractString = ARGS[1]
+    seed0::Int = parse(Int, ARGS[2])
+    budget::Float64 = parse(Float64, ARGS[3])
+    trials::Int = length(ARGS) >= 4 ? parse(Int, ARGS[4]) : 1
 
     # Read instance once (stdin is consumed line-by-line).
     # Store in a buffer so we can re-read for each trial.
     instance_lines = readlines(stdin)
-    instance_text = join(instance_lines, "\n")
+    instance_text::String = join(instance_lines, "\n")
 
     for t in 0:trials-1
-        s = seed0 + t
+        s::Int = seed0 + t
         Random.seed!(s)
 
         # Re-parse the instance for each trial (stdin consumed)
-        buf = IOBuffer(instance_text)
-        prob = from_textio(buf)
+        buf::IOBuffer = IOBuffer(instance_text)
+        prob::TSPProblem = from_textio(buf)
 
-        start = time()
-        sol = solve(algo, prob, budget)
-        elapsed = time() - start
+        start::Float64 = time()
+        sol::TSPSolution = solve(algo, prob, budget)
+        elapsed::Float64 = time() - start
 
         obj = objective_value(sol)
-        obj_str = obj === nothing ? "none" : string(obj)
+        obj_str::String = obj === nothing ? "none" : string(obj)
 
         println("$s OBJ=$obj_str TIME=$elapsed")
     end
+    return nothing
 end
 
 run_benchmark()

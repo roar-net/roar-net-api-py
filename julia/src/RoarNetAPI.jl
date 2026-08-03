@@ -1,6 +1,20 @@
 module RoarNetAPI
 
+module Types
+    include("types/Move.jl")
+    include("types/Neighbourhood.jl")
+    include("types/Problem.jl")
+    include("types/Solution.jl")
+
+    export Move,
+        Neighbourhood,
+        Problem,
+        Solution
+end
+
 module Operations
+    using ..Types
+
     include("operations/apply_move.jl")
     include("operations/construction_neighbourhood.jl")
     include("operations/copy_solution.jl")
@@ -36,22 +50,9 @@ module Operations
         random_solution
 end
 
-module Types
-    using ..Operations
-
-    include("types/Move.jl")
-    include("types/Neighbourhood.jl")
-    include("types/Problem.jl")
-    include("types/Solution.jl")
-
-    export Move,
-        Neighbourhood,
-        Problem,
-        Solution
-end
-
 module Algorithms
     using ..Operations
+    using ..Types
 
     include("algorithms/greedy_construction.jl")
     include("algorithms/beam_search.jl")
@@ -72,13 +73,13 @@ module Algorithms
 end
 
 # Re-export all public names from submodules
+using .Types: Move, Neighbourhood, Problem, Solution
+
 using .Operations: apply_move, construction_neighbourhood, copy_solution,
     destruction_neighbourhood, empty_solution, heuristic_solution, invert_move,
     local_neighbourhood, lower_bound, lower_bound_increment, moves,
     objective_value, objective_value_increment, random_move,
     random_moves_without_replacement, random_solution
-
-using .Types: Move, Neighbourhood, Problem, Solution
 
 using .Algorithms: greedy_construction, greedy_construction_with_random_tie_breaking,
     beam_search, best_improvement, first_improvement, grasp, rls, sa

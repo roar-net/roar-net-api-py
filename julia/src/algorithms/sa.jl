@@ -7,8 +7,8 @@ struct LinearDecay{T<:Real}
     init_temp::T
 end
 
-function (s::LinearDecay)(t::Real)
-    return t * s.init_temp
+function (s::LinearDecay)(t::Real)::Float64
+    return Float64(t * s.init_temp)
 end
 
 """
@@ -19,7 +19,7 @@ Returns 1.0 for non-worsening moves, and `exp(-incr / t)` for worsening moves.
 """
 struct ExponentialAcceptance end
 
-function (::ExponentialAcceptance)(incr::Real, t::Real)
+function (::ExponentialAcceptance)(incr::Real, t::Real)::Float64
     if incr <= 0
         return 1.0
     else
@@ -28,18 +28,20 @@ function (::ExponentialAcceptance)(incr::Real, t::Real)
 end
 
 """
-    sa(problem, solution, budget, init_temp; temperature=nothing, acceptance=nothing)
+    sa(problem::Problem, solution::Solution, budget::Real, init_temp::Real;
+       temperature::Union{Nothing, Function}=nothing,
+       acceptance::Union{Nothing, Function}=nothing) -> solution::Solution
 
 Simulated Annealing: improve `solution` using `budget` seconds of computation,
 with initial temperature `init_temp`. Optional `temperature` schedule and
 `acceptance` probability function can be provided.
 """
-function sa(problem, solution, budget, init_temp;
-        temperature=nothing,
-        acceptance=nothing)
+function sa(problem::Problem, solution::Solution, budget::Real, init_temp::Real;
+        temperature::Union{Nothing, Function}=nothing,
+        acceptance::Union{Nothing, Function}=nothing)::Solution
 
     if temperature === nothing
-        temperature = LinearDecay(init_temp)
+        temperature = LinearDecay(Float64(init_temp))
     end
     if acceptance === nothing
         acceptance = ExponentialAcceptance()

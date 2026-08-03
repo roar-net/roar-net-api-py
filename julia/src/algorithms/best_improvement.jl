@@ -1,10 +1,10 @@
 """
-    best_improvement(problem, solution)
+    best_improvement(problem::Problem, solution::Solution) -> solution::Solution
 
 Improve `solution` by repeatedly applying the best improving move
 from the local neighbourhood, until no improving move exists.
 """
-function best_improvement(problem, solution)
+function best_improvement(problem::Problem, solution::Solution)::Solution
     neigh = local_neighbourhood(problem)
 
     mvs = _bi_moves_and_increments(neigh, solution)
@@ -22,8 +22,8 @@ function best_improvement(problem, solution)
     return solution
 end
 
-function _bi_moves_and_increments(neigh, solution)
-    result = []
+function _bi_moves_and_increments(neigh::Neighbourhood, solution::Solution)::Vector{Tuple{Any, <:Real}}
+    result::Vector{Tuple{Any, <:Real}} = Tuple{Any, <:Real}[]
     for mv in moves(neigh, solution)
         incr = objective_value_increment(mv, solution)
         @assert incr !== nothing

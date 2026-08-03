@@ -1,11 +1,11 @@
 """
-    rls(problem, solution, budget)
+    rls(problem::Problem, solution::Solution, budget::Real) -> solution::Solution
 
 Random Local Search: repeatedly sample random moves from the local
 neighbourhood and apply any non-worsening move, until `budget` seconds
 have elapsed or no improving move is found.
 """
-function rls(problem, solution, budget)
+function rls(problem::Problem, solution::Solution, budget::Real)::Solution
     start = time()
 
     neigh = local_neighbourhood(problem)

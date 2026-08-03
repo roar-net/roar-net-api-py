@@ -2,6 +2,8 @@
     KMin{K, V}
 
 Data structure that maintains the `k` smallest items according to a key function.
+The element types `K` and `V` are concrete per call; the default constructor
+returns `KMin{Any, Any}` so callers can push items of any type.
 """
 mutable struct KMin{K,V}
     k::Int
@@ -10,14 +12,14 @@ mutable struct KMin{K,V}
     values::Vector{V}
 end
 
-function KMin(k::Int, key::Function)
-    return KMin(k, key, Vector{Any}(), Vector{Any}())
+function KMin(k::Integer, key::Function)::KMin{Any,Any}
+    return KMin{Any,Any}(Int(k), key, Any[], Any[])
 end
 
-function Base.push!(km::KMin, value)
+function Base.push!(km::KMin, value)::Nothing
     key = km.key(value)
     if length(km.values) == km.k && key > km.keys[end]
-        return
+        return nothing
     end
     i = searchsortedlast(km.keys, key) + 1
     insert!(km.keys, i, key)
@@ -26,19 +28,20 @@ function Base.push!(km::KMin, value)
         pop!(km.keys)
         pop!(km.values)
     end
+    return nothing
 end
 
-Base.length(km::KMin) = length(km.values)
+Base.length(km::KMin)::Int = length(km.values)
 Base.iterate(km::KMin) = iterate(km.values)
 Base.iterate(km::KMin, state) = iterate(km.values, state)
 
 """
-    beam_search(problem; solution=nothing, bw=10)
+    beam_search(problem::Problem; solution::Union{Nothing, Solution}=nothing, bw::Integer=10) -> solution::Solution
 
 Beam search: a constructive heuristic that maintains a beam of width `bw`
 partial solutions, extending each by the best moves at each step.
 """
-function beam_search(problem; solution=nothing, bw=10)
+function beam_search(problem::Problem; solution::Union{Nothing, Solution}=nothing, bw::Integer=10)::Solution
     neigh = construction_neighbourhood(problem)
 
     if solution === nothing
@@ -53,10 +56,10 @@ function beam_search(problem; solution=nothing, bw=10)
         return best
     end
 
-    v = [(lb, best)]
+    v::Vector{Tuple{<:Real, Solution}} = [(lb, best)]
 
     while true
-        candidates = KMin(bw, x -> x[1])
+        candidates = KMin(Int(bw), x -> x[1])
         for (lb_val, s) in v
             for mv in moves(neigh, s)
                 incr = lower_bound_increment(mv, s)
@@ -70,7 +73,7 @@ function beam_search(problem; solution=nothing, bw=10)
             break
         end
 
-        v = []
+        v = Tuple{<:Real, Solution}[]
         for (lb_val, s, mv) in candidates
             ns = copy_solution(s)
             ns = apply_move(mv, ns)

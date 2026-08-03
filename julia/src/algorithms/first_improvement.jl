@@ -1,10 +1,10 @@
 """
-    first_improvement(problem, solution)
+    first_improvement(problem::Problem, solution::Solution) -> solution::Solution
 
 Improve `solution` by scanning the local neighbourhood in random order
 and applying the first improving move found.
 """
-function first_improvement(problem, solution)
+function first_improvement(problem::Problem, solution::Solution)::Solution
     neigh = local_neighbourhood(problem)
 
     while true

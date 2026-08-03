@@ -1,11 +1,16 @@
 """
-    grasp(problem, budget; solution=nothing, alpha=0.1, local_search=nothing)
+    grasp(problem::Problem, budget::Real; solution::Union{Nothing, Solution}=nothing,
+          alpha::Real=0.1, local_search::Union{Nothing, Function}=nothing) -> solution::Solution
 
 Greedy Randomized Adaptive Search Procedure: build solutions using a
 restricted candidate list controlled by `alpha`, then optionally improve
 with `local_search`. Runs for `budget` seconds.
 """
-function grasp(problem, budget; solution=nothing, alpha=0.1, local_search=nothing)
+function grasp(problem::Problem, budget::Real;
+        solution::Union{Nothing, Solution}=nothing,
+        alpha::Real=0.1,
+        local_search::Union{Nothing, Function}=nothing)::Solution
+
     start = time()
 
     neigh = construction_neighbourhood(problem)
@@ -19,8 +24,8 @@ function grasp(problem, budget; solution=nothing, alpha=0.1, local_search=nothin
 
     while time() - start < budget
         s = copy_solution(solution)
-        b = nothing
-        b_obj = nothing
+        b::Union{Nothing, Solution} = nothing
+        b_obj::Union{Nothing, <:Real} = nothing
 
         cl = _gr_moves_and_increments(neigh, s)
         while !isempty(cl)
@@ -54,8 +59,8 @@ function grasp(problem, budget; solution=nothing, alpha=0.1, local_search=nothin
     return best
 end
 
-function _gr_moves_and_increments(neigh, solution)
-    result = []
+function _gr_moves_and_increments(neigh::Neighbourhood, solution::Solution)::Vector{Tuple{Any, <:Real}}
+    result::Vector{Tuple{Any, <:Real}} = Tuple{Any, <:Real}[]
     for mv in moves(neigh, solution)
         incr = lower_bound_increment(mv, solution)
         if incr !== nothing

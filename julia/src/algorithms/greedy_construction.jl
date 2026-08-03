@@ -1,10 +1,10 @@
 """
-    greedy_construction(problem; solution=nothing)
+    greedy_construction(problem::Problem; solution::Union{Nothing, Solution}=nothing) -> solution::Solution
 
 Solve `problem` using a greedy construction approach.
 If `solution` is given, it is used as the starting point.
 """
-function greedy_construction(problem; solution=nothing)
+function greedy_construction(problem::Problem; solution::Union{Nothing, Solution}=nothing)::Solution
     neigh = construction_neighbourhood(problem)
 
     if solution === nothing
@@ -24,11 +24,11 @@ function greedy_construction(problem; solution=nothing)
 end
 
 """
-    greedy_construction_with_random_tie_breaking(problem; solution=nothing)
+    greedy_construction_with_random_tie_breaking(problem::Problem; solution::Union{Nothing, Solution}=nothing) -> solution::Solution
 
 Solve `problem` using a greedy construction approach with random tie-breaking.
 """
-function greedy_construction_with_random_tie_breaking(problem; solution=nothing)
+function greedy_construction_with_random_tie_breaking(problem::Problem; solution::Union{Nothing, Solution}=nothing)::Solution
     neigh = construction_neighbourhood(problem)
 
     if solution === nothing
@@ -47,8 +47,8 @@ function greedy_construction_with_random_tie_breaking(problem; solution=nothing)
     return solution
 end
 
-function _gc_moves_and_increments(neigh, solution)
-    result = []
+function _gc_moves_and_increments(neigh::Neighbourhood, solution::Solution)::Vector{Tuple{Any, <:Real}}
+    result::Vector{Tuple{Any, <:Real}} = Tuple{Any, <:Real}[]
     for mv in moves(neigh, solution)
         incr = lower_bound_increment(mv, solution)
         if incr !== nothing

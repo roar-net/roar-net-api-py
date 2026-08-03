@@ -22,27 +22,27 @@ several metaheuristic algorithms.
 ### Interface operations
 
 Interface functions are defined in the `RoarNetAPI.Operations` module
-(and re-exported). Each function defines a contract that concrete types
-must implement:
+(and re-exported). Each function declares a typed contract that concrete
+types must implement via multiple dispatch:
 
-| Operation | Julia function | Purpose |
+| Operation | Julia signature | Return type |
 |---|---|---|
-| `SupportsApplyMove` | `apply_move(move, solution)` | Apply a move to a solution |
-| `SupportsConstructionNeighbourhood` | `construction_neighbourhood(problem)` | Get constructive neighbourhood |
-| `SupportsCopySolution` | `copy_solution(solution)` | Copy a solution |
-| `SupportsDestructionNeighbourhood` | `destruction_neighbourhood(problem)` | Get destruction neighbourhood |
-| `SupportsEmptySolution` | `empty_solution(problem)` | Create empty solution |
-| `SupportsHeuristicSolution` | `heuristic_solution(problem)` | Create heuristic solution |
-| `SupportsInvertMove` | `invert_move(move)` | Invert a move |
-| `SupportsLocalNeighbourhood` | `local_neighbourhood(problem)` | Get local neighbourhood |
-| `SupportsLowerBound` | `lower_bound(solution)` | Get lower bound |
-| `SupportsLowerBoundIncrement` | `lower_bound_increment(move, solution)` | Lower bound increment of a move |
-| `SupportsMoves` | `moves(neighbourhood, solution)` | List all moves |
-| `SupportsObjectiveValue` | `objective_value(solution)` | Get objective value |
-| `SupportsObjectiveValueIncrement` | `objective_value_increment(move, solution)` | Objective increment of a move |
-| `SupportsRandomMove` | `random_move(neighbourhood, solution)` | Get a random move |
-| `SupportsRandomMovesWithoutReplacement` | `random_moves_without_replacement(neighbourhood, solution)` | Random moves without replacement |
-| `SupportsRandomSolution` | `random_solution(problem)` | Create random solution |
+| `SupportsApplyMove` | `apply_move(::Move, ::Solution)` | `Solution` |
+| `SupportsConstructionNeighbourhood` | `construction_neighbourhood(::Problem)` | `Neighbourhood` |
+| `SupportsCopySolution` | `copy_solution(::Solution)` | `Solution` |
+| `SupportsDestructionNeighbourhood` | `destruction_neighbourhood(::Problem)` | `Neighbourhood` |
+| `SupportsEmptySolution` | `empty_solution(::Problem)` | `Solution` |
+| `SupportsHeuristicSolution` | `heuristic_solution(::Problem)` | `Solution` |
+| `SupportsInvertMove` | `invert_move(::Move)` | `Move` |
+| `SupportsLocalNeighbourhood` | `local_neighbourhood(::Problem)` | `Neighbourhood` |
+| `SupportsLowerBound` | `lower_bound(::Solution)` | `Union{Nothing, <:Real}` |
+| `SupportsLowerBoundIncrement` | `lower_bound_increment(::Move, ::Solution)` | `Union{Nothing, <:Real}` |
+| `SupportsMoves` | `moves(::Neighbourhood, ::Solution)` | `Any` (iterable of `Move`) |
+| `SupportsObjectiveValue` | `objective_value(::Solution)` | `Union{Nothing, <:Real}` |
+| `SupportsObjectiveValueIncrement` | `objective_value_increment(::Move, ::Solution)` | `Union{Nothing, <:Real}` |
+| `SupportsRandomMove` | `random_move(::Neighbourhood, ::Solution)` | `Union{Nothing, Move}` |
+| `SupportsRandomMovesWithoutReplacement` | `random_moves_without_replacement(::Neighbourhood, ::Solution)` | `Any` (iterable of `Move`) |
+| `SupportsRandomSolution` | `random_solution(::Problem)` | `Solution` |
 
 ### Composite abstract types
 
@@ -60,17 +60,44 @@ These are defined in `RoarNetAPI.Types`:
 
 ### Algorithms
 
-All algorithms are in `RoarNetAPI.Algorithms`:
+All algorithms are in `RoarNetAPI.Algorithms`. Entry-point arguments are
+typed against the abstract markers:
 
-| Algorithm | Function | Requires |
+| Algorithm | Function | Signature |
 |---|---|---|
-| Beam search | `beam_search(problem; bw=10)` | `construction_neighbourhood`, `moves`, `apply_move`, `lower_bound_increment`, `lower_bound`, `copy_solution` |
-| Best improvement | `best_improvement(problem, solution)` | `local_neighbourhood`, `moves`, `objective_value_increment`, `apply_move` |
-| First improvement | `first_improvement(problem, solution)` | `local_neighbourhood`, `random_moves_without_replacement`, `objective_value_increment`, `apply_move` |
-| GRASP | `grasp(problem, budget; alpha=0.1)` | `construction_neighbourhood`, `moves`, `lower_bound_increment`, `copy_solution`, `apply_move` |
-| Greedy construction | `greedy_construction(problem)` | `construction_neighbourhood`, `moves`, `lower_bound_increment`, `apply_move` |
-| Random local search | `rls(problem, solution, budget)` | `local_neighbourhood`, `random_moves_without_replacement`, `objective_value_increment`, `apply_move` |
-| Simulated annealing | `sa(problem, solution, budget, init_temp)` | `local_neighbourhood`, `random_moves_without_replacement`, `objective_value_increment`, `apply_move`, `copy_solution` |
+| Beam search | `beam_search` | `beam_search(problem::Problem; solution::Union{Nothing, Solution}=nothing, bw::Integer=10)::Solution` |
+| Best improvement | `best_improvement` | `best_improvement(problem::Problem, solution::Solution)::Solution` |
+| First improvement | `first_improvement` | `first_improvement(problem::Problem, solution::Solution)::Solution` |
+| GRASP | `grasp` | `grasp(problem::Problem, budget::Real; solution::Union{Nothing, Solution}=nothing, alpha::Real=0.1, local_search::Union{Nothing, Function}=nothing)::Solution` |
+| Greedy construction | `greedy_construction` | `greedy_construction(problem::Problem; solution::Union{Nothing, Solution}=nothing)::Solution` |
+| Random local search | `rls` | `rls(problem::Problem, solution::Solution, budget::Real)::Solution` |
+| Simulated annealing | `sa` | `sa(problem::Problem, solution::Solution, budget::Real, init_temp::Real; temperature::Union{Nothing, Function}=nothing, acceptance::Union{Nothing, Function}=nothing)::Solution` |
+
+## Typing conventions
+
+The library uses strong typing throughout:
+
+- **Abstract markers** (`Problem`, `Solution`, `Move`, `Neighbourhood`)
+  are the dispatch keys for interface functions. Every algorithm
+  argument that is a "model" object is declared against these markers.
+- **`Optional[T]`** in the Python spec maps to `Union{Nothing, T}` in
+  Julia. Numeric returns that may be infeasible use
+  `Union{Nothing, <:Real}`.
+- **Iterable returns** (`moves`, `random_moves_without_replacement`)
+  are declared `::Any` because concrete implementations may return
+  either a `Vector{<:Move}` or a `Channel{<:Move}`. The contract is
+  "an iterable of `Move`", enforced by docstring and the test suite.
+- **Internal helpers** that pair a move with a numeric increment use
+  the typed accumulator `Vector{Tuple{Any, <:Real}}` so the
+  heterogeneous move column is explicit and the increment column is
+  restricted to real numbers.
+- **Callable hooks** (`temperature`, `acceptance`, `local_search`)
+  are typed as `::Union{Nothing, Function}` so users can pass any
+  Julia callable or a functor struct.
+- **Concrete implementations** should add explicit return types on
+  every method (e.g. `objective_value(sol::MySolution)::Int`), so
+  that `hasmethod` tests catch regressions and the dispatch chain
+  is type-stable.
 
 ## Development
 
@@ -102,7 +129,7 @@ Julia idioms:
 
 | Python | Julia |
 |---|---|
-| `Protocol` class with `__init__` typing | Abstract type + generic function |
+| `Protocol` class with `__init__` typing | Abstract type + typed generic function (e.g. `apply_move(::Move, ::Solution)::Solution`) |
 | `TypeVar("T", bound=X)` | `T <: X` type parameter |
 | `@final` class | `struct` |
 | `self` parameter | First argument (Julia convention) |
