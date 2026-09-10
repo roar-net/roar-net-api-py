@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: © 2025 Authors of the roar-net-api-py project <https://github.com/roar-net/roar-net-api-py/blob/main/AUTHORS>
+#
+# SPDX-License-Identifier: Apache-2.0
 """
     grasp(problem::Problem, budget::Real; solution::Union{Nothing, Solution}=nothing,
           alpha::Real=0.1, local_search::Union{Nothing, Function}=nothing) -> solution::Solution
